@@ -1,0 +1,42 @@
+version: "3"
+services:
+  ofelia:
+    image: mcuadros/ofelia:latest
+    depends_on:
+      - trade_bot
+    command: daemon --docker
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "32m"
+
+  trade_bot:
+    build: .
+    volumes:
+      - ./.git:/app/.git:ro
+      - ./scripts:/app/scripts:ro
+      - ./src:/app/src:ro
+      - ./tests:/app/tests:ro
+      - ./tmp:/tmp/alphasea-trade-bot
+    working_dir: /app
+    environment:
+      CCXT_EXCHANGE: ftx
+      CCXT_API_KEY: ${CCXT_API_KEY}
+      CCXT_API_SECRET: ${CCXT_API_SECRET}
+      CCXT_SUBACCOUNT: ${CCXT_SUBACCOUNT}
+      ALPHASEA_AGENT_BASE_URL: ${ALPHASEA_AGENT_BASE_URL:-http://host.docker.internal:8070}
+      ALPHASEA_LEVERAGE: 1
+      ALPHASEA_LOG_LEVEL: debug
+    labels:
+      ofelia.enabled: "true"
+      ofelia.job-exec.rebalancecron.schedule: "0 1 * * *"
+      ofelia.job-exec.rebalancecron.command: "python src/rebalance.py"
+    command: bash -c "while :; do sleep 1; done"
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "32m"
