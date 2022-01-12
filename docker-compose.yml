@@ -23,7 +23,7 @@ services:
       - ./tmp:/tmp/alphasea-trade-bot
     working_dir: /app
     environment:
-      CCXT_EXCHANGE: ftx
+      CCXT_EXCHANGE: ${CCXT_EXCHANGE:-ftx}
       CCXT_API_KEY: ${CCXT_API_KEY}
       CCXT_API_SECRET: ${CCXT_API_SECRET}
       CCXT_SUBACCOUNT: ${CCXT_SUBACCOUNT}
