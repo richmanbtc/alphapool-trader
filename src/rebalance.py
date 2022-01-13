@@ -1,8 +1,8 @@
 import os
 import ccxt
 import time
-from agent_api import fetch_blended_prediction
-from utils import (
+from .agent_api import fetch_blended_prediction
+from .utils import (
     create_ccxt_client,
     fetch_positions,
     fetch_tickers,
@@ -11,7 +11,7 @@ from utils import (
     normalize_amount,
     round_to_execution_start_at
 )
-from logger import create_logger
+from .logger import create_logger
 
 exchange = os.getenv('CCXT_EXCHANGE')
 api_key = os.getenv('CCXT_API_KEY')
@@ -21,7 +21,8 @@ leverage = float(os.getenv('ALPHASEA_LEVERAGE'))
 agent_base_url = os.getenv('ALPHASEA_AGENT_BASE_URL')
 log_level = os.getenv('ALPHASEA_LOG_LEVEL')
 
-def main():
+
+def rebalance_job():
     execution_start_at = round_to_execution_start_at(time.time())
     execution_time = 60 * 60
     execution_time_buffer = 5 * 60
@@ -72,7 +73,7 @@ def main():
             ])
             df_pos = df_pos.reset_index().pivot(index='phase', columns='symbol', values='position')
             df_pos = df_pos.fillna(0)
-            df_pos = df_pos.loc[:, df_pos.abs().max(axis=0) > 0] # drop all zero symbol
+            df_pos = df_pos.loc[:, df_pos.abs().max(axis=0) > 0]  # drop all zero symbol
             logger.debug('df_pos {}'.format(df_pos))
 
             for symbol in df_pos.columns:
@@ -106,6 +107,3 @@ def main():
                 )
         except Exception as e:
             logger.error(e)
-
-
-main()
