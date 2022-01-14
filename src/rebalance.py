@@ -1,6 +1,7 @@
 import os
 import ccxt
 import time
+import pandas as pd
 from .agent_api import fetch_blended_prediction
 from .utils import (
     create_ccxt_client,
