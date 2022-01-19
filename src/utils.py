@@ -27,7 +27,7 @@ def symbol_to_ccxt_symbol(symbol, exchange=None):
 
 def round_to_execution_start_at(x):
     day_seconds = 24 * 60 * 60
-    execution_start_at_shift = 1 * 60 * 60
+    execution_start_at_shift = 30 * 60
     return _round_int(int(x) - execution_start_at_shift, day_seconds) + execution_start_at_shift
 
 
