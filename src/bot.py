@@ -13,14 +13,13 @@ from .utils import (
 
 class Bot:
     def __init__(self, client=None, logger=None, leverage=None,
-                 agent_base_url=None, exchange=None):
+                 agent_base_url=None):
         self._client = client
         self._logger = logger
         self._order_interval = 5
         self._loop_interval = 60
         self._leverage = leverage
         self._agent_base_url = agent_base_url
-        self._exchange = exchange
 
     def run(self):
         while True:
@@ -41,7 +40,7 @@ class Bot:
 
         df_current = fetch_positions(self._client)
         df_target = fetch_target_positions(timestamp=now, agent_base_url=self._agent_base_url)
-        df_target.index = df_target.index.map(lambda x: symbol_to_ccxt_symbol(x, exchange=self._exchange))
+        df_target.index = df_target.index.map(lambda x: symbol_to_ccxt_symbol(x, exchange=self._client.id))
 
         df_target = df_target.join(df_ticker[['close']], on='symbol', how='left')
         df_target['position'] = self._leverage * df_target['position'] * collateral / df_target['close']
