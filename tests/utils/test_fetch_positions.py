@@ -8,11 +8,11 @@ from pandas.testing import assert_frame_equal
 # https://github.com/ccxt/ccxt/blob/81c44dfdcd6729ef5b4e10635919571de4e0d82f/python/ccxt/ftx.py#L1852
 
 response = [{
-    'symbol': 'BTC-PERP',
+    'symbol': 'BTC/USD:USD',
     'side': 'long',
     'contracts': 1,
 }, {
-    'symbol': 'ETH-PERP',
+    'symbol': 'ETH/USD:USD',
     'side': 'short',
     'contracts': 2,
 }]
@@ -26,8 +26,8 @@ class TestUtilsFetchPositions(TestCase):
         df = fetch_positions(client)
 
         expected = pd.DataFrame([
-            ['BTC-PERP', 1],
-            ['ETH-PERP', -2],
+            ['BTC/USD:USD', 1],
+            ['ETH/USD:USD', -2],
         ], columns=['symbol', 'position']).set_index('symbol')
 
         assert_frame_equal(df, expected)

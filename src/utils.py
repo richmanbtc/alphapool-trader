@@ -2,6 +2,8 @@ import ccxt
 import pandas as pd
 import numpy as np
 
+EXECUTION_TIME = 2 * 60 * 60
+
 
 def create_ccxt_client(exchange, api_key=None, api_secret=None, subaccount=None):
     headers = {}
@@ -23,12 +25,6 @@ def symbol_to_ccxt_symbol(symbol, exchange=None):
         return symbol + 'USDT'
     else:
         raise Exception('not implemented')
-
-
-def round_to_execution_start_at(x):
-    day_seconds = 24 * 60 * 60
-    execution_start_at_shift = 30 * 60
-    return _round_int(int(x) - execution_start_at_shift, day_seconds) + execution_start_at_shift
 
 
 def normalize_amount(x, price=None, market=None):
@@ -83,6 +79,3 @@ def fetch_collateral(client):
     else:
         raise Exception('not implemented')
 
-
-def _round_int(a, b):
-    return ((a + b // 2) // b) * b

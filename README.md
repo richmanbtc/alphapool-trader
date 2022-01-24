@@ -39,10 +39,3 @@ alphasea-agentに依存。
 ```bash
 docker-compose run --rm trade_bot bash scripts/test.sh
 ```
-
-### rebalance
-
-```bash
-docker-compose run --rm trade_bot python src/rebalance.py
-```
-
