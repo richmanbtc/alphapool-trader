@@ -53,7 +53,10 @@ class Bot:
         df = df.fillna(0)
         df['signed_amount'] = df['position'] - df['position_current']
 
+        self._logger.debug('df {}'.format(df))
+
         for symbol in df.index:
+            self._logger.debug('order loop symbol {}'.format(symbol))
             signed_amount = df.loc[symbol, 'signed_amount']
 
             signed_amount = normalize_amount(
