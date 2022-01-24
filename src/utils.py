@@ -75,7 +75,7 @@ def fetch_tickers(client):
 def fetch_collateral(client):
     if client.id == 'ftx':
         res = client.privateGetAccount()
-        return res['result']['collateral']
+        return float(res['result']['collateral'])
     else:
         raise Exception('not implemented')
 

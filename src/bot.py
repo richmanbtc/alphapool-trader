@@ -42,6 +42,7 @@ class Bot:
         df_ticker = fetch_tickers(self._client)
 
         df_current = fetch_positions(self._client)
+
         df_target = fetch_target_positions(timestamp=now, agent_base_url=self._agent_base_url)
         df_target.index = df_target.index.map(lambda x: symbol_to_ccxt_symbol(x, exchange=self._client.id))
 
