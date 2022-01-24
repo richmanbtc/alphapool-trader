@@ -1,4 +1,5 @@
 import time
+import traceback
 import numpy as np
 import pandas as pd
 from .agent_api import fetch_target_positions
@@ -27,6 +28,8 @@ class Bot:
                 self._step()
             except Exception as e:
                 self._logger.error(e)
+                self._logger.error(traceback.format_exc())
+
             time.sleep(self._loop_interval)
 
     def _step(self):
