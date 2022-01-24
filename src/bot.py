@@ -49,7 +49,12 @@ class Bot:
         df_target = df_target.join(df_ticker[['close']], on='symbol', how='left')
         df_target['position'] = self._leverage * df_target['position'] * collateral / df_target['close']
 
-        df = df_target.join(df_current, how='outer', on='symbol', rsuffix='_current')
+        df = pd.merge(
+            df_target,
+            df_current,
+            how='outer', suffixes=['', '_current'],
+            left_index=True, right_index=True
+        )
         df = df.fillna(0)
         df['signed_amount'] = df['position'] - df['position_current']
 
