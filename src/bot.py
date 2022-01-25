@@ -61,6 +61,10 @@ class Bot:
         self._logger.debug('df {}'.format(df))
 
         for symbol in df.index:
+            if symbol not in df_ticker.index:
+                self._logger.debug('order loop skipped. df_ticker not found. symbol {}'.format(symbol))
+                continue
+
             self._logger.debug('order loop symbol {}'.format(symbol))
             signed_amount = df.loc[symbol, 'signed_amount']
 
