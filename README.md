@@ -66,6 +66,7 @@ docker-compose logs -f
 |name|description|
 |:-:|:-:|
 |ALPHASEA_AGENT_BASE_URL|alphasea-agentのbase URL|
+|ALPHASEA_LEVERAGE|レバレッジ。デフォルトは1|
 |CCXT_EXCHANGE|ccxtの取引所ID(ftx, binanceなど)を指定|
 |CCXT_API_KEY|取引所APIキー|
 |CCXT_API_SECRET|取引所APIシークレット|

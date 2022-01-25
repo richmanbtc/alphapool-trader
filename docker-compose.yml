@@ -15,7 +15,7 @@ services:
       CCXT_API_SECRET: ${CCXT_API_SECRET}
       CCXT_SUBACCOUNT: ${CCXT_SUBACCOUNT}
       ALPHASEA_AGENT_BASE_URL: ${ALPHASEA_AGENT_BASE_URL:-http://host.docker.internal:8070}
-      ALPHASEA_LEVERAGE: 1
+      ALPHASEA_LEVERAGE: ${ALPHASEA_LEVERAGE:-1.0}
       ALPHASEA_LOG_LEVEL: debug
     command: python -m src.main
     restart: always
