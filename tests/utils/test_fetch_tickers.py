@@ -8,11 +8,21 @@ from pandas.testing import assert_frame_equal
 
 
 class TestUtilsFetchTickers(TestCase):
-    def test_ok(self):
+    def test_ok_ftx(self):
         client = create_ccxt_client('ftx')
 
         df = fetch_tickers(client)
 
         self.assertGreater(df.loc['BTC/USD:USD', 'close'], 10000)
+        self.assertEqual(df.index.name, 'symbol')
+        self.assertEqual(df.columns, ['close'])
+
+    def test_ok_binance(self):
+        client = create_ccxt_client('binance')
+
+        df = fetch_tickers(client)
+        print(df)
+
+        self.assertGreater(df.loc['BTC/USDT', 'close'], 10000)
         self.assertEqual(df.index.name, 'symbol')
         self.assertEqual(df.columns, ['close'])

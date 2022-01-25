@@ -7,13 +7,18 @@ EXECUTION_TIME = 2 * 60 * 60
 
 def create_ccxt_client(exchange, api_key=None, api_secret=None, subaccount=None):
     headers = {}
+    options = {}
+
     if exchange == 'ftx' and subaccount is not None and subaccount != '':
         headers['FTX-SUBACCOUNT'] = subaccount
+    if exchange == 'binance':
+        options['defaultType'] = 'future'
 
     client = getattr(ccxt, exchange)({
         'apiKey': api_key,
         'secret': api_secret,
-        'headers': headers
+        'headers': headers,
+        'options': options,
     })
     return client
 
@@ -22,7 +27,7 @@ def symbol_to_ccxt_symbol(symbol, exchange=None):
     if exchange == 'ftx':
         return symbol + '/USD:USD'
     elif exchange == 'binance':
-        return symbol + 'USDT'
+        return symbol + '/USDT'
     else:
         raise Exception('not implemented')
 
@@ -76,6 +81,9 @@ def fetch_collateral(client):
     if client.id == 'ftx':
         res = client.privateGetAccount()
         return float(res['result']['collateral'])
+    elif client.id == 'binance':
+        res = client.fapiPrivateGetAccount()
+        return float(res['totalMarginBalance'])
     else:
         raise Exception('not implemented')
 
