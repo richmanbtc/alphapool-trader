@@ -2,7 +2,6 @@ import time
 import traceback
 import numpy as np
 import pandas as pd
-from .agent_api import fetch_target_positions
 from .utils import (
     fetch_positions,
     fetch_tickers,
@@ -14,13 +13,13 @@ from .utils import (
 
 class Bot:
     def __init__(self, client=None, logger=None, leverage=None,
-                 agent_base_url=None):
+                 alphapool_client=None):
         self._client = client
         self._logger = logger
         self._order_interval = 5
         self._loop_interval = 60
         self._leverage = leverage
-        self._agent_base_url = agent_base_url
+        self._alphapool_client = alphapool_client
 
     def run(self):
         while True:

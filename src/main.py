@@ -1,9 +1,11 @@
 import os
+import dataset
+from alphapool import Client
 from .utils import (
     create_ccxt_client,
 )
 from .logger import create_logger
-from .bot import Bot
+from .bot_maker import BotMaker
 
 
 def start():
@@ -11,9 +13,13 @@ def start():
     api_key = os.getenv('CCXT_API_KEY')
     api_secret = os.getenv('CCXT_API_SECRET')
     subaccount = os.getenv('CCXT_SUBACCOUNT')
-    leverage = float(os.getenv('ALPHASEA_LEVERAGE'))
-    agent_base_url = os.getenv('ALPHASEA_AGENT_BASE_URL')
-    log_level = os.getenv('ALPHASEA_LOG_LEVEL')
+    leverage = float(os.getenv('ALPHAPOOL_LEVERAGE'))
+    log_level = os.getenv('ALPHAPOOL_LOG_LEVEL')
+    model_id = os.getenv('ALPHAPOOL_MODEL_ID')
+
+    database_url = os.getenv("ALPHAPOOL_DATABASE_URL")
+    db = dataset.connect(database_url)
+    alphapool_client = Client(db)
 
     logger = create_logger(log_level)
 
@@ -24,12 +30,14 @@ def start():
         subaccount=subaccount,
     )
 
-    bot = Bot(
+    bot = BotMaker(
         client=client,
         logger=logger,
         leverage=leverage,
-        agent_base_url=agent_base_url
+        alphapool_client=alphapool_client,
+        model_id=model_id
     )
     bot.run()
+
 
 start()

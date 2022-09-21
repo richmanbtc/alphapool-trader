@@ -28,6 +28,10 @@ def symbol_to_ccxt_symbol(symbol, exchange=None):
         return symbol + '/USD:USD'
     elif exchange == 'binance':
         return symbol + '/USDT'
+    elif exchange == 'bybit':
+        return symbol + '/USDT'
+    elif exchange == 'okex':
+        return symbol + '/USDT'
     else:
         raise Exception('not implemented')
 
@@ -82,6 +86,12 @@ def fetch_collateral(client):
         res = client.privateGetAccount()
         return float(res['result']['collateral'])
     elif client.id == 'binance':
+        res = client.fapiPrivateGetAccount()
+        return float(res['totalMarginBalance'])
+    elif client.id == 'bybit':
+        res = client.fapiPrivateGetAccount()
+        return float(res['totalMarginBalance'])
+    elif client.id == 'okex':
         res = client.fapiPrivateGetAccount()
         return float(res['totalMarginBalance'])
     else:

@@ -7,16 +7,16 @@ services:
       - ./scripts:/app/scripts:ro
       - ./src:/app/src:ro
       - ./tests:/app/tests:ro
-      - ./tmp:/tmp/alphasea-trade-bot
+      - ./tmp:/tmp/alphapool-trader
     working_dir: /app
     environment:
       CCXT_EXCHANGE: ${CCXT_EXCHANGE:-ftx}
       CCXT_API_KEY: ${CCXT_API_KEY}
       CCXT_API_SECRET: ${CCXT_API_SECRET}
       CCXT_SUBACCOUNT: ${CCXT_SUBACCOUNT}
-      ALPHASEA_AGENT_BASE_URL: ${ALPHASEA_AGENT_BASE_URL:-http://host.docker.internal:8070}
-      ALPHASEA_LEVERAGE: ${ALPHASEA_LEVERAGE:-1.0}
-      ALPHASEA_LOG_LEVEL: debug
+      ALPHAPOOL_LEVERAGE: ${ALPHAPOOL_LEVERAGE:-1.0}
+      ALPHAPOOL_LOG_LEVEL: debug
+      ALPHAPOOL_MODEL_ID: ${ALPHAPOOL_MODEL_ID}
     command: python -m src.main
     restart: always
     logging:
