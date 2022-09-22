@@ -67,7 +67,7 @@ class BotMaker:
 
             time.sleep(self._order_interval)
 
-            ticker = self._client.fetch_ticker(symbol)
+            ticker = self._client.fetch_ticker(ccxt_symbol)
             price = ticker['last']
 
             self._sync_order(
