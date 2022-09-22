@@ -19,7 +19,7 @@ fetch_positions_response_ftx = [{
 
 
 get_account_response_binance = {
-    'totalMarginBalance': '1.0',
+    'totalMarginBalance': '10000.0',
 }
 
 fetch_positions_response_binance = [{

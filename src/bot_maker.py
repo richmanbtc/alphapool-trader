@@ -55,6 +55,7 @@ class BotMaker:
         self._logger.info('collateral {}'.format(collateral))
 
         df_current_pos = fetch_positions(self._client)
+        self._logger.info('df_current_pos {}'.format(df_current_pos))
         markets = {market['symbol']: market for market in self._client.fetch_markets()}
 
         for col in row.index:
@@ -66,16 +67,17 @@ class BotMaker:
 
             time.sleep(self._order_interval)
 
+            ticker = self._client.fetch_ticker(symbol)
+            price = ticker['last']
+
             self._sync_order(
                 markets[ccxt_symbol],
-                target_pos * collateral - df_current_pos.loc[ccxt_symbol, 'position'],
+                target_pos * collateral / price - df_current_pos.loc[ccxt_symbol, 'position'],
+                price
             )
 
-    def _sync_order(self, market, signed_amount):
+    def _sync_order(self, market, signed_amount, price):
         symbol = market['symbol']
-
-        ticker = self._client.fetch_ticker(symbol)
-        price = ticker['last']
 
         self._logger.info('_sync_order symbol {} signed_amount {} price {}'.format(
             symbol, signed_amount, price
@@ -95,14 +97,16 @@ class BotMaker:
         # fetch latest ticker
         ob = self._client.fetch_order_book(symbol=symbol)
 
-        self._logger.info('create_order symbol {} signed_amount {} ob {}'.format(
-            symbol, signed_amount, ob
+        best_ask = ob['asks'][0][0]
+        best_bid = ob['bids'][0][0]
+        self._logger.info('create_order symbol {} signed_amount {} best_ask {} best_bid {}'.format(
+            symbol, signed_amount, best_ask, best_bid
         ))
         self._client.create_order(
             symbol,
             'limit',
             'sell' if signed_amount < 0 else 'buy',
             np.abs(signed_amount),
-            ob['asks'][0][0] if signed_amount < 0 else ob['bids'][0][0],
+            best_ask if signed_amount < 0 else best_bid,
         )
 
