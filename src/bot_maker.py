@@ -99,8 +99,12 @@ class BotMaker:
 
         best_ask = ob['asks'][0][0]
         best_bid = ob['bids'][0][0]
-        self._logger.info('create_order symbol {} signed_amount {} best_ask {} best_bid {}'.format(
-            symbol, signed_amount, best_ask, best_bid
+        params = {}
+        if self._client.id == 'binance':
+            params['timeInForce'] = 'GTX'
+
+        self._logger.info('create_order symbol {} signed_amount {} best_ask {} best_bid {} params {}'.format(
+            symbol, signed_amount, best_ask, best_bid, params
         ))
         self._client.create_order(
             symbol,
@@ -108,5 +112,6 @@ class BotMaker:
             'sell' if signed_amount < 0 else 'buy',
             np.abs(signed_amount),
             best_ask if signed_amount < 0 else best_bid,
+            params
         )
 

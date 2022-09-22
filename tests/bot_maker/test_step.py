@@ -106,5 +106,6 @@ class TestBotMakerStep(TestCase):
             'buy',
             1.0,
             9000.0,
+            { 'timeInForce': 'GTX' }
         )
         client.cancel_all_orders.assert_called_with(symbol='BTC/USDT')
