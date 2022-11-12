@@ -33,7 +33,6 @@ def start():
 
         params = {}
         if client.id == 'binance':
-            params['timeInForce'] = 'GTX'
             params['reduceOnly'] = 'true'
 
         logger.info('cancel_all_orders {}'.format(symbol))
@@ -42,11 +41,12 @@ def start():
         logger.info('create_order symbol {} amount {} side {} params {}'.format(
             symbol, amount, side, params
         ))
-        client.create_market_order(
+        client.create_order(
             symbol,
+            'market',
             side,
             amount,
-            params
+            params=params
         )
 
 
