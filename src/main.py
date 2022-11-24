@@ -6,20 +6,25 @@ from .utils import (
 )
 from .logger import create_logger
 from .bot_maker import BotMaker
+from .alphapool_mock import MockClient
 
 
 def start():
     exchange = os.getenv('CCXT_EXCHANGE')
     api_key = os.getenv('CCXT_API_KEY')
     api_secret = os.getenv('CCXT_API_SECRET')
+    api_password = os.getenv('CCXT_API_PASSWORD')
     subaccount = os.getenv('CCXT_SUBACCOUNT')
     leverage = float(os.getenv('ALPHAPOOL_LEVERAGE'))
     log_level = os.getenv('ALPHAPOOL_LOG_LEVEL')
     model_id = os.getenv('ALPHAPOOL_MODEL_ID')
 
     database_url = os.getenv("ALPHAPOOL_DATABASE_URL")
-    db = dataset.connect(database_url)
-    alphapool_client = Client(db)
+    if database_url == 'mock':
+        alphapool_client = MockClient()
+    else:
+        db = dataset.connect(database_url)
+        alphapool_client = Client(db)
 
     logger = create_logger(log_level)
 
@@ -27,6 +32,7 @@ def start():
         exchange=exchange,
         api_key=api_key,
         api_secret=api_secret,
+        api_password=api_password,
         subaccount=subaccount,
     )
 

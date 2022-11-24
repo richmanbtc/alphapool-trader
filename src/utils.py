@@ -5,7 +5,8 @@ import numpy as np
 EXECUTION_TIME = 2 * 60 * 60
 
 
-def create_ccxt_client(exchange, api_key=None, api_secret=None, subaccount=None):
+def create_ccxt_client(exchange, api_key=None, api_secret=None,
+                       api_password=None, subaccount=None):
     headers = {}
     options = {}
 
@@ -17,6 +18,7 @@ def create_ccxt_client(exchange, api_key=None, api_secret=None, subaccount=None)
     client = getattr(ccxt, exchange)({
         'apiKey': api_key,
         'secret': api_secret,
+        'password': api_password,
         'headers': headers,
         'options': options,
     })
@@ -30,8 +32,8 @@ def symbol_to_ccxt_symbol(symbol, exchange=None):
         return symbol + '/USDT'
     elif exchange == 'bybit':
         return symbol + '/USDT'
-    elif exchange == 'okex':
-        return symbol + '/USDT'
+    elif exchange == 'okx':
+        return symbol + '/USDT:USDT'
     else:
         raise Exception('not implemented')
 
@@ -67,6 +69,8 @@ def round_precision(x, precision):
 def fetch_positions(client):
     poss = client.fetch_positions()
     df = pd.DataFrame(poss)
+    if df.shape[0] == 0:
+        return pd.DataFrame(columns=['symbol', 'position']).set_index('symbol')
     df['position'] = df['contracts'] * np.where(df['side'] == 'long', 1, -1)
     df = df[['symbol', 'position']]
     df = df.set_index('symbol')
@@ -91,9 +95,20 @@ def fetch_collateral(client):
     elif client.id == 'bybit':
         res = client.fapiPrivateGetAccount()
         return float(res['totalMarginBalance'])
-    elif client.id == 'okex':
-        res = client.fapiPrivateGetAccount()
-        return float(res['totalMarginBalance'])
+    elif client.id == 'okx':
+        res = client.privateGetAccountBalance()
+        return float(res['data'][0]['totalEq'])
     else:
         raise Exception('not implemented')
 
+
+def cancel_all_orders(client, symbol):
+    if hasattr(client, 'cancel_all_orders'):
+        client.cancel_all_orders(symbol=symbol)
+        return
+
+    orders = client.fetch_open_orders(symbol=symbol)
+    if len(orders) == 0:
+        return
+    order_ids = [x['id'] for x in orders]
+    client.cancel_orders(order_ids, symbol=symbol)

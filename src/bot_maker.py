@@ -9,6 +9,7 @@ from .utils import (
     fetch_collateral,
     symbol_to_ccxt_symbol,
     normalize_amount,
+    cancel_all_orders,
 )
 
 
@@ -70,18 +71,31 @@ class BotMaker:
             ticker = self._client.fetch_ticker(ccxt_symbol)
             price = ticker['last']
 
+            if ccxt_symbol in df_current_pos.index:
+                cur_pos = df_current_pos.loc[ccxt_symbol, 'position'] * markets[ccxt_symbol]['contractSize']
+            else:
+                cur_pos = 0.0
+            signed_amount = target_pos * collateral / price - cur_pos
+            if signed_amount * cur_pos < 0:
+                reduce_only = True
+            else:
+                reduce_only = False
+
             self._sync_order(
                 markets[ccxt_symbol],
-                target_pos * collateral / price - df_current_pos.loc[ccxt_symbol, 'position'],
-                price
+                signed_amount,
+                price,
+                reduce_only
             )
 
-    def _sync_order(self, market, signed_amount, price):
+    def _sync_order(self, market, signed_amount, price, reduce_only):
         symbol = market['symbol']
 
         self._logger.info('_sync_order symbol {} signed_amount {} price {}'.format(
             symbol, signed_amount, price
         ))
+
+        signed_amount /= market['contractSize']
 
         signed_amount = normalize_amount(
             signed_amount,
@@ -89,9 +103,10 @@ class BotMaker:
             market=market,
         )
 
-        self._client.cancel_all_orders(symbol=symbol)
+        cancel_all_orders(self._client, symbol)
 
         if signed_amount == 0:
+            self._logger.info('normalized amount zero. skip')
             return
 
         # fetch latest ticker
@@ -100,18 +115,22 @@ class BotMaker:
         best_ask = ob['asks'][0][0]
         best_bid = ob['bids'][0][0]
         params = {}
+        order_type = 'limit'
         if self._client.id == 'binance':
             params['timeInForce'] = 'GTX'
+            params['reduceOnly'] = 'true' if reduce_only else 'false'
+        elif self._client.id == 'okx':
+            order_type = 'post_only'
+            params['reduceOnly'] = 'true' if reduce_only else 'false'
 
         self._logger.info('create_order symbol {} signed_amount {} best_ask {} best_bid {} params {}'.format(
             symbol, signed_amount, best_ask, best_bid, params
         ))
         self._client.create_order(
             symbol,
-            'limit',
+            order_type,
             'sell' if signed_amount < 0 else 'buy',
             np.abs(signed_amount),
             best_ask if signed_amount < 0 else best_bid,
             params
         )
-
