@@ -83,6 +83,7 @@ class BotMaker:
             signed_amount = target_pos * collateral / price - cur_pos
             if signed_amount * cur_pos < 0:
                 reduce_only = True
+                signed_amount = np.sign(signed_amount) * min(np.abs(signed_amount), np.abs(cur_pos))
             else:
                 reduce_only = False
 
