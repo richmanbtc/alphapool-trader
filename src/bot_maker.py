@@ -26,6 +26,13 @@ class BotMaker:
         self._model_id = model_id
         self._leverage_set = {}
 
+        if self._client.id == 'bybit':
+            self._logger.info('switch position mode')
+            self._client.privatePostPrivateLinearPositionSwitchMode({
+                'coin': 'USDT',
+                'mode': 'MergedSingle'
+            })
+
     def run(self):
         while True:
             try:
@@ -124,12 +131,17 @@ class BotMaker:
         best_bid = ob['bids'][0][0]
         params = {}
         order_type = 'limit'
+
         if self._client.id == 'binance':
             params['timeInForce'] = 'GTX'
             params['reduceOnly'] = 'true' if reduce_only else 'false'
         elif self._client.id == 'okx':
             order_type = 'post_only'
             params['reduceOnly'] = 'true' if reduce_only else 'false'
+        elif self._client.id == 'bybit':
+            params['timeInForce'] = 'PostOnly'
+            params['reduceOnly'] = reduce_only
+            params['position_idx'] = 0
 
         self.ensure_leverage(market, 10)
 

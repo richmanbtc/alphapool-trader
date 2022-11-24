@@ -1,9 +1,7 @@
 import ccxt
 import pandas as pd
 import numpy as np
-
-EXECUTION_TIME = 2 * 60 * 60
-
+from ccxt.base.errors import BadRequest
 
 def create_ccxt_client(exchange, api_key=None, api_secret=None,
                        api_password=None, subaccount=None):
@@ -31,7 +29,7 @@ def symbol_to_ccxt_symbol(symbol, exchange=None):
     elif exchange == 'binance':
         return symbol + '/USDT'
     elif exchange == 'bybit':
-        return symbol + '/USDT'
+        return symbol + '/USDT:USDT'
     elif exchange == 'okx':
         return symbol + '/USDT:USDT'
     else:
@@ -93,8 +91,8 @@ def fetch_collateral(client):
         res = client.fapiPrivateGetAccount()
         return float(res['totalMarginBalance'])
     elif client.id == 'bybit':
-        res = client.fapiPrivateGetAccount()
-        return float(res['totalMarginBalance'])
+        res = client.privateGetV2PrivateWalletBalance({ 'coin': 'USDT' })
+        return float(res['result']['USDT']['equity'])
     elif client.id == 'okx':
         res = client.privateGetAccountBalance()
         return float(res['data'][0]['totalEq'])
@@ -117,4 +115,9 @@ def cancel_all_orders(client, symbol):
 def set_leverage(client, market, leverage):
     symbol = market['symbol']
     leverage = min(leverage, market['limits']['leverage']['max'])
-    client.set_leverage(leverage, symbol)
+    try:
+        client.set_leverage(leverage, symbol)
+    except BadRequest as e:
+        if 'leverage not modified' in e.args[0]:
+            return
+        raise
