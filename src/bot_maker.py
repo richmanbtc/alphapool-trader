@@ -10,6 +10,7 @@ from .utils import (
     symbol_to_ccxt_symbol,
     normalize_amount,
     cancel_all_orders,
+    set_leverage
 )
 
 
@@ -23,6 +24,7 @@ class BotMaker:
         self._leverage = leverage
         self._alphapool_client = alphapool_client
         self._model_id = model_id
+        self._leverage_set = {}
 
     def run(self):
         while True:
@@ -129,6 +131,8 @@ class BotMaker:
             order_type = 'post_only'
             params['reduceOnly'] = 'true' if reduce_only else 'false'
 
+        self.ensure_leverage(market, 10)
+
         self._logger.info('create_order symbol {} signed_amount {} best_ask {} best_bid {} params {}'.format(
             symbol, signed_amount, best_ask, best_bid, params
         ))
@@ -140,3 +144,13 @@ class BotMaker:
             best_ask if signed_amount < 0 else best_bid,
             params
         )
+
+    def ensure_leverage(self, market, leverage):
+        symbol = market['symbol']
+        if symbol in self._leverage_set:
+            return
+        self._logger.info('set_leverage symbol {} leverage {}'.format(
+            symbol, leverage
+        ))
+        set_leverage(self._client, market, leverage)
+        self._leverage_set[symbol] = True

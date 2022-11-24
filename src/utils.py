@@ -112,3 +112,9 @@ def cancel_all_orders(client, symbol):
         return
     order_ids = [x['id'] for x in orders]
     client.cancel_orders(order_ids, symbol=symbol)
+
+
+def set_leverage(client, market, leverage):
+    symbol = market['symbol']
+    leverage = min(leverage, market['limits']['leverage']['max'])
+    client.set_leverage(leverage, symbol)
