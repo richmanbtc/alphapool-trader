@@ -64,6 +64,11 @@ class BotMaker:
                 continue
             symbol = col.replace("p.", "")
             ccxt_symbol = symbol_to_ccxt_symbol(symbol, exchange=self._client.id)
+
+            if ccxt_symbol not in markets:
+                self._logger.warn('symbol {} not exist. skip'.format(ccxt_symbol))
+                continue
+
             target_pos = row[col]
 
             time.sleep(self._order_interval)
