@@ -114,7 +114,9 @@ def cancel_all_orders(client, symbol):
 
 def set_leverage(client, market, leverage):
     symbol = market['symbol']
-    leverage = min(leverage, market['limits']['leverage']['max'])
+    max_leverage = market['limits']['leverage']['max']
+    if max_leverage is not None:
+        leverage = min(leverage, max_leverage)
     try:
         client.set_leverage(leverage, symbol)
     except BadRequest as e:
