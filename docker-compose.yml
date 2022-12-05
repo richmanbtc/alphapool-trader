@@ -1,6 +1,6 @@
 version: "3"
 services:
-  trade_bot:
+  trader:
     build: .
     volumes:
       - ./.git:/app/.git:ro

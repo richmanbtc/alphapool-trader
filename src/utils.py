@@ -23,7 +23,7 @@ def create_ccxt_client(exchange, api_key=None, api_secret=None,
     return client
 
 
-def symbol_to_ccxt_symbol(symbol, exchange=None):
+def symbol_to_ccxt_symbol(symbol, exchange):
     if exchange == 'ftx':
         return symbol + '/USD:USD'
     elif exchange == 'binance':
@@ -36,20 +36,25 @@ def symbol_to_ccxt_symbol(symbol, exchange=None):
         raise Exception('not implemented')
 
 
-def normalize_amount(x, price=None, market=None):
+def ccxt_symbol_to_symbol(symbol):
+    return symbol.replace('/USD:USD', '').replace('/USDT', '').replace('/USDT:USDT', '')
+
+
+def normalize_amount(x, price=None, market=None, reduce_only=False):
     if x < 0:
-        return -normalize_amount(-x, price=price, market=market)
+        return -normalize_amount(-x, price=price, market=market, reduce_only=reduce_only)
 
     limits = market['limits']['amount']
     cost_limits = market['limits']['cost']
 
-    if 'min' in cost_limits and cost_limits['min'] is not None:
-        if x * price < 2 * cost_limits['min']:  # 2: 安全率
-            x = 0.0
+    if not reduce_only:
+        if 'min' in cost_limits and cost_limits['min'] is not None:
+            if x * price < 2 * cost_limits['min']:  # 2: safety factor
+                x = 0.0
 
-    if 'min' in limits and limits['min'] is not None:
-        if x < limits['min']:
-            x = 0.0
+        if 'min' in limits and limits['min'] is not None:
+            if x < limits['min']:
+                x = 0.0
 
     if 'max' in limits and limits['max'] is not None:
         x = min(limits['max'], x)

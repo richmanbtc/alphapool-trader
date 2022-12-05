@@ -6,20 +6,28 @@ class MockClient:
     def __init__(self):
         pass
 
-    def get_positions(self, tournament=None, min_timestamp=None):
+    def get_positions(self, min_timestamp=None):
         t = (int(time.time()) // 300) * 300
         df = pd.DataFrame([
             {
                 'model_id': 'model1',
                 'timestamp': t,
-                'p.BTC': 1.0,
+                'positions': {
+                    'BTC': 1.0
+                },
+                'weights': {},
+                'orders': {}
             }, {
                 'model_id': 'mock',
                 'timestamp': t,
-                'w.model1': 1.0,
+                'positions': {},
+                'weights': {
+                    'model1': 1.0
+                },
+                'orders': {}
             }
         ])
         df['timestamp'] = pd.to_datetime(df["timestamp"], utc=True, unit='s')
-        df = df.set_index(["model_id", "timestamp"]).sort_index()
+        df = df.set_index(['timestamp', 'model_id']).sort_index()
 
         return df

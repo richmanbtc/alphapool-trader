@@ -23,4 +23,4 @@ jobs:
         node-version: 16.x
     - name: Run tests
       run: |
-        docker-compose run --rm trade_bot bash scripts/test.sh
+        docker-compose run --rm trader bash scripts/test.sh

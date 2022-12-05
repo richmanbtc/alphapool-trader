@@ -7,7 +7,7 @@ RUN pip install --no-cache-dir \
     numpy==1.23.3 \
     pandas==1.5.0 \
     schedule==1.1.0 \
-    "git+https://github.com/richmanbtc/alphapool.git@v0.0.9#egg=alphapool" \
+    "git+https://github.com/richmanbtc/alphapool.git@v0.1.3#egg=alphapool" \
     dataset==1.5.2 \
     psycopg2==2.9.3
 
