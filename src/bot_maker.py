@@ -74,7 +74,8 @@ class BotMaker:
     def _step(self):
         collateral = fetch_collateral(self._client)
         self._logger.info('collateral {}'.format(collateral))
-        markets = {market['symbol']: market for market in self._client.fetch_markets()}
+        markets = {market['symbol']: fix_market(market, self._client.id)
+                   for market in self._client.fetch_markets()}
 
         def sync_limit_orders():
             df_current_pos = fetch_positions(self._client)
@@ -189,7 +190,7 @@ class BotMaker:
                 continue
 
             signed_amount = target_pos - cur_pos
-            if signed_amount * cur_pos < 0:
+            if self._reduce_only_enabled() and signed_amount * cur_pos < 0:
                 reduce_only = True
                 signed_amount = np.sign(signed_amount) * min(np.abs(signed_amount), np.abs(cur_pos))
             else:
@@ -335,6 +336,10 @@ class BotMaker:
         )
 
     def _ensure_leverage(self, market, leverage):
+        if self._client.id == 'bitflyer':
+            self._logger.info('bitflyer _ensure_leverage skip')
+            return
+
         symbol = market['symbol']
         if symbol in self._leverage_set:
             return
@@ -371,6 +376,8 @@ class BotMaker:
     def _symbol_to_ccxt_symbol(self, symbol):
         return symbol_to_ccxt_symbol(symbol, self._client.id)
 
+    def _reduce_only_enabled(self):
+        return self._client.id not in ['bitflyer']
 
 @dataclasses.dataclass
 class Order:
@@ -405,3 +412,11 @@ class Order:
 
 def amount_to_exchange_amount(amount, leverage, collateral, price, market):
     return amount * leverage * collateral / price / market['contractSize']
+
+
+def fix_market(market, exchange):
+    if exchange == 'bitflyer':
+        market['limits']['amount']['min'] = 0.01
+        market['precision'] = {'amount': 0.00000001, 'price': 1.0}
+        market['contractSize'] = 1.0
+    return market

@@ -20,6 +20,7 @@ def create_ccxt_client(exchange, api_key=None, api_secret=None,
         'headers': headers,
         'options': options,
     })
+
     return client
 
 
@@ -32,12 +33,14 @@ def symbol_to_ccxt_symbol(symbol, exchange):
         return symbol + '/USDT:USDT'
     elif exchange == 'okx':
         return symbol + '/USDT:USDT'
+    elif exchange == 'bitflyer':
+        return symbol + '/JPY:JPY'
     else:
         raise Exception('not implemented')
 
 
 def ccxt_symbol_to_symbol(symbol):
-    return symbol.replace('/USD:USD', '').replace('/USDT', '').replace(':USDT', '')
+    return symbol.replace('/USD:USD', '').replace('/USDT', '').replace(':USDT', '').replace('/JPY:JPY', '')
 
 
 def normalize_amount(x, price=None, market=None, reduce_only=False):
@@ -70,6 +73,19 @@ def round_precision(x, precision):
 
 
 def fetch_positions(client):
+    if client.id == 'bitflyer':
+        res = client.privateGetGetpositions({'product_code': 'FX_BTC_JPY'})
+        if len(res) == 0:
+            return pd.DataFrame([], columns=['symbol', 'position']).set_index('symbol')
+        df = pd.DataFrame([
+            {
+                'symbol': 'BTC/JPY:JPY',
+                'position': float(res[0]['size']) * (1 if res[0]['side'] == 'BUY' else -1)
+            }
+        ])
+        df = df.set_index('symbol')
+        return df
+
     poss = client.fetch_positions()
     df = pd.DataFrame(poss)
     if df.shape[0] == 0:
@@ -101,6 +117,9 @@ def fetch_collateral(client):
     elif client.id == 'okx':
         res = client.privateGetAccountBalance()
         return float(res['data'][0]['totalEq'])
+    elif client.id == 'bitflyer':
+        res = client.privateGetGetcollateral()
+        return float(res['collateral']) + float(res['open_position_pnl'])
     else:
         raise Exception('not implemented')
 
