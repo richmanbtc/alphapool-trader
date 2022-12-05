@@ -37,7 +37,7 @@ def symbol_to_ccxt_symbol(symbol, exchange):
 
 
 def ccxt_symbol_to_symbol(symbol):
-    return symbol.replace('/USD:USD', '').replace('/USDT', '').replace('/USDT:USDT', '')
+    return symbol.replace('/USD:USD', '').replace('/USDT', '').replace(':USDT', '')
 
 
 def normalize_amount(x, price=None, market=None, reduce_only=False):

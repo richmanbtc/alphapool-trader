@@ -41,10 +41,6 @@ class BotMaker:
         # exchange states
         self._exchange_positions = defaultdict(float)
 
-        df_current_pos = fetch_positions(self._client)
-        df_current_pos = df_current_pos.loc[df_current_pos['position'] != 0]
-        self._force_sync_exchange_positions(df_current_pos)
-
     def run(self):
         initialized = False
 
@@ -68,6 +64,11 @@ class BotMaker:
                 'coin': 'USDT',
                 'mode': 'MergedSingle'
             })
+
+        df_current_pos = fetch_positions(self._client)
+        df_current_pos = df_current_pos.loc[df_current_pos['position'] != 0]
+        self._force_sync_exchange_positions(df_current_pos)
+
         self._logger.info('initialized')
 
     def _step(self):
