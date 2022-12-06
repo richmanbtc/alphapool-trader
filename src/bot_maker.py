@@ -1,6 +1,5 @@
 from collections import defaultdict
 import dataclasses
-import gc
 import time
 import traceback
 import numpy as np
@@ -55,7 +54,6 @@ class BotMaker:
                 self._logger.error(e)
                 self._logger.error(traceback.format_exc())
 
-            gc.collect()
             time.sleep(self._loop_interval)
 
     def _initialize(self):
@@ -119,29 +117,30 @@ class BotMaker:
 
         limit_order_amounts = defaultdict(float)
 
-        for model_id, row in df.iterrows():
-            timestamp = row['timestamp']
+        for row in df.itertuples():
+            model_id = row.Index
+            timestamp = row.timestamp
             if (timestamp, model_id) in self._processed_rows:
                 continue
             self._processed_rows.add((timestamp, model_id))
             self._logger.info('process row {} {}'.format(timestamp, model_id))
 
             self._positions[model_id] = {}
-            for symbol in row['positions']:
+            for symbol in row.positions:
                 if skip_symbol_not_exit(symbol):
                     continue
-                self._logger.info('position updated {} {} {}'.format(model_id, symbol, row['positions'][symbol]))
-                self._positions[model_id][symbol] = row['positions'][symbol]
+                self._logger.info('position updated {} {} {}'.format(model_id, symbol, row.positions[symbol]))
+                self._positions[model_id][symbol] = row.positions[symbol]
 
             if model_id == self._model_id:
-                self._logger.info('weight updated {}'.format(row['weights']))
-                self._weights = row['weights']
+                self._logger.info('weight updated {}'.format(row.weights))
+                self._weights = row.weights
 
             if pd.to_datetime(now - 300, unit='s', utc=True) < timestamp:
-                for symbol in row['orders']:
+                for symbol in row.orders:
                     if skip_symbol_not_exit(symbol):
                         continue
-                    for order in row['orders'][symbol]:
+                    for order in row.orders[symbol]:
                         weight = self._weights.get(model_id, 0.0)
                         key = (timestamp.timestamp(), symbol, order['price'], order['is_buy'], order['duration'])
                         limit_order_amounts[key] += amount_to_exchange_amount(
