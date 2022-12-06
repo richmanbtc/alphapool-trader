@@ -2,6 +2,7 @@ from collections import defaultdict
 import dataclasses
 import time
 import traceback
+from ccxt.base.errors import OrderNotFound
 import numpy as np
 import pandas as pd
 from .utils import (
@@ -252,7 +253,12 @@ class BotMaker:
                     exchange_orders.remove(exchange_order2)
                     break
             if exchange_order is None:
-                exchange_order = self._client.fetch_order(order.exchange_order_id, symbol=ccxt_symbol)
+                try:
+                    exchange_order = self._client.fetch_order(order.exchange_order_id, symbol=ccxt_symbol)
+                except OrderNotFound as e:
+                    self._logger.warn('order not found. remove {} {}'.format(order, e))
+                    self._limit_orders.pop(i)
+                    continue
 
             signed_executed = (exchange_order['filled'] - order.executed_amount) * order.side_int()
             self._exchange_positions[order.symbol] += signed_executed
