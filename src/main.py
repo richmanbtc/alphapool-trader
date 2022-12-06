@@ -58,8 +58,11 @@ if tracemalloc_enabled != 0:
         print('exception')
 
     snapshot = tracemalloc.take_snapshot()
-    top_stats = snapshot.statistics('lineno')
+    top_stats = snapshot.statistics('traceback')
     for stat in top_stats[:100]:
         print(stat)
+        print('count {} size {}'.format(stat.count, stat.size))
+        for line in stat.traceback.format():
+            print(line)
 else:
     start()
