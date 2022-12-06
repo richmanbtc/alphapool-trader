@@ -76,23 +76,20 @@ class BotMaker:
         markets = {market['symbol']: fix_market(market, self._client.id)
                    for market in self._client.fetch_markets()}
 
-        def sync_limit_orders():
-            df_current_pos = fetch_positions(self._client)
-            df_current_pos = df_current_pos.loc[df_current_pos['position'] != 0]
-            position_changed = self._sync_limit_orders(markets)
-            if not position_changed:
-                # Since the order has not been filled since the last order sync until now,
-                # you can safely force sync the positions acquired during that time.
-                self._force_sync_exchange_positions(df_current_pos)
-
         self._fetch_models(collateral, markets)
+        self._submit_limit_orders(markets)
 
-        sync_limit_orders()
+        df_current_pos = fetch_positions(self._client)
+        df_current_pos = df_current_pos.loc[df_current_pos['position'] != 0]
+        position_changed = self._sync_limit_orders()
+        if not position_changed:
+            # Since the order has not been filled since the last order sync until now,
+            # you can safely force sync the positions acquired during that time.
+            self._force_sync_exchange_positions(df_current_pos)
 
         target_positions = self._get_target_positions(collateral, markets)
         self._sync_taker_positions(target_positions)
-
-        sync_limit_orders()
+        self._submit_limit_orders(markets)
 
     def _fetch_models(self, collateral, markets):
         now = time.time()
@@ -214,7 +211,27 @@ class BotMaker:
                 exchange_order_id=None,
             ))
 
-    def _sync_limit_orders(self, markets):
+    def _submit_limit_orders(self, markets):
+        for i in range(len(self._limit_orders))[::-1]:
+            order = self._limit_orders[i]
+
+            if order.exchange_order_id is not None:
+                continue
+
+            ccxt_symbol = self._symbol_to_ccxt_symbol(order.symbol)
+            res = self._create_order(
+                market=markets[ccxt_symbol],
+                signed_amount=order.side_int() * order.amount,
+                price=order.price,
+                reduce_only=order.reduce_only,
+            )
+            if res is None:
+                self._logger.info('remove skipped order {}'.format(order))
+                self._limit_orders.pop(i)
+            else:
+                order.exchange_order_id = res['id']
+
+    def _sync_limit_orders(self):
         now = time.time()
         position_changed = False
 
@@ -227,44 +244,31 @@ class BotMaker:
             order = self._limit_orders[i]
             ccxt_symbol = self._symbol_to_ccxt_symbol(order.symbol)
 
-            if order.exchange_order_id is None:
-                res = self._create_order(
-                    market=markets[ccxt_symbol],
-                    signed_amount=order.side_int() * order.amount,
-                    price=order.price,
-                    reduce_only=order.reduce_only,
-                )
-                if res is None:
-                    self._logger.info('remove skipped order {}'.format(order))
-                    self._limit_orders.pop(i)
-                else:
-                    order.exchange_order_id = res['id']
-            else:
-                exchange_order = None
-                for exchange_order2 in exchange_orders:
-                    if exchange_order2['id'] == order.exchange_order_id:
-                        exchange_order = exchange_order2
-                        exchange_orders.remove(exchange_order2)
-                        break
-                if exchange_order is None:
-                    exchange_order = self._client.fetch_order(order.exchange_order_id, symbol=ccxt_symbol)
+            exchange_order = None
+            for exchange_order2 in exchange_orders:
+                if exchange_order2['id'] == order.exchange_order_id:
+                    exchange_order = exchange_order2
+                    exchange_orders.remove(exchange_order2)
+                    break
+            if exchange_order is None:
+                exchange_order = self._client.fetch_order(order.exchange_order_id, symbol=ccxt_symbol)
 
-                signed_executed = (exchange_order['filled'] - order.executed_amount) * order.side_int()
-                self._exchange_positions[order.symbol] += signed_executed
-                position_changed = True
+            signed_executed = (exchange_order['filled'] - order.executed_amount) * order.side_int()
+            self._exchange_positions[order.symbol] += signed_executed
+            position_changed = True
 
-                if order.executed_amount != exchange_order['filled']:
-                    self._logger.info('order executed old local {} new exchange {}'.format(order, exchange_order))
-                order.executed_amount = exchange_order['filled']
-                status = exchange_order['status']
+            if order.executed_amount != exchange_order['filled']:
+                self._logger.info('order executed old local {} new exchange {}'.format(order, exchange_order))
+            order.executed_amount = exchange_order['filled']
+            status = exchange_order['status']
 
-                if status == 'open' and order.expired(now):
-                    self._logger.info('order expired. cancel order {}'.format(order['exchange_order_id']))
-                    self._client.cancel_order(order.exchange_order_id, symbol=ccxt_symbol)
+            if status == 'open' and order.expired(now):
+                self._logger.info('order expired. cancel order {}'.format(order['exchange_order_id']))
+                self._client.cancel_order(order.exchange_order_id, symbol=ccxt_symbol)
 
-                if status != 'open' and order.get_position(now) == 0:
-                    self._logger.info('order exited. remove {}'.format(order))
-                    self._limit_orders.pop(i)
+            if status != 'open' and order.get_position(now) == 0:
+                self._logger.info('order exited. remove {}'.format(order))
+                self._limit_orders.pop(i)
 
         for exchange_order in exchange_orders:
             self._logger.info('cancel unknown order {}'.format(exchange_order['id']))
