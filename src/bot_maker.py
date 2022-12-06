@@ -34,7 +34,6 @@ class BotMaker:
         # strategy
         self._positions = {}
         self._weights = {}
-        self._taker_order_ids = {}
         self._limit_orders = []
         self._processed_rows = set()
 
@@ -399,7 +398,7 @@ class Order:
         if now <= expire_at:
             return self.executed_amount
         elif now <= expire_at + exit_duration:
-            return self.executed_amount * (now - expire_at) / self.exit_duration()
+            return self.executed_amount * (now - expire_at) / exit_duration
         return 0.0
 
     def expired(self, now):
