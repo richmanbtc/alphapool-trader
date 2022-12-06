@@ -75,12 +75,13 @@ def round_precision(x, precision):
 def fetch_positions(client):
     if client.id == 'bitflyer':
         res = client.privateGetGetpositions({'product_code': 'FX_BTC_JPY'})
-        if len(res) == 0:
-            return pd.DataFrame([], columns=['symbol', 'position']).set_index('symbol')
+        pos = 0.0
+        for item in res:
+            pos += float(item['size']) * (1 if item['side'] == 'BUY' else -1)
         df = pd.DataFrame([
             {
                 'symbol': 'BTC/JPY:JPY',
-                'position': float(res[0]['size']) * (1 if res[0]['side'] == 'BUY' else -1)
+                'position': pos,
             }
         ])
         df = df.set_index('symbol')
