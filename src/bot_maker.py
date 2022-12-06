@@ -329,11 +329,14 @@ class BotMaker:
         self._logger.info('create_order symbol {} signed_amount {} price {} params {}'.format(
             symbol, signed_amount, price, params
         ))
+        amount = np.abs(signed_amount)
+        if self._client.id == 'bitflyer':
+            amount = '{:.8f}'.format(amount)
         return self._client.create_order(
             symbol,
             order_type,
             'sell' if signed_amount < 0 else 'buy',
-            np.abs(signed_amount),
+            amount,
             price,
             params
         )
