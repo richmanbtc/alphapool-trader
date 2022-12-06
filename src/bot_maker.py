@@ -1,5 +1,6 @@
 from collections import defaultdict
 import dataclasses
+import gc
 import time
 import traceback
 import numpy as np
@@ -54,6 +55,7 @@ class BotMaker:
                 self._logger.error(e)
                 self._logger.error(traceback.format_exc())
 
+            gc.collect()
             time.sleep(self._loop_interval)
 
     def _initialize(self):
