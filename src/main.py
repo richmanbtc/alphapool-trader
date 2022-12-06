@@ -1,5 +1,6 @@
 import os
 import dataset
+import tracemalloc
 from alphapool import Client
 from .utils import (
     create_ccxt_client,
@@ -46,4 +47,19 @@ def start():
     bot.run()
 
 
-start()
+tracemalloc_enabled = int(os.getenv('TRACEMALLOC_ENABLED', 0))
+
+if tracemalloc_enabled != 0:
+    tracemalloc.start()
+
+    try:
+        start()
+    except:
+        print('exception')
+
+    snapshot = tracemalloc.take_snapshot()
+    top_stats = snapshot.statistics('lineno')
+    for stat in top_stats[:100]:
+        print(stat)
+else:
+    start()
