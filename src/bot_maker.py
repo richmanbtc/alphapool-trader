@@ -376,7 +376,7 @@ class BotMaker:
             )
 
         for order in self._limit_orders:
-            target_positions[symbol] += order.side_int() * order.get_position(now)
+            target_positions[order.symbol] += order.side_int() * order.get_position(now)
         return target_positions
 
     def _symbol_to_ccxt_symbol(self, symbol):
