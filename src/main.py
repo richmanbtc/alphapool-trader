@@ -50,7 +50,7 @@ def start():
 tracemalloc_enabled = int(os.getenv('TRACEMALLOC_ENABLED', 0))
 
 if tracemalloc_enabled != 0:
-    tracemalloc.start()
+    tracemalloc.start(int(os.getenv('TRACEMALLOC_FRAMES', 1)))
 
     try:
         start()
