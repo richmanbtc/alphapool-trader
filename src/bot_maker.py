@@ -199,7 +199,10 @@ class BotMaker:
                     and order.exchange_order_id is not None):
                     self._logger.info('cancel old order {}'.format(order))
                     ccxt_symbol = self._symbol_to_ccxt_symbol(order.symbol)
-                    self._client.cancel_order(order.exchange_order_id, symbol=ccxt_symbol)
+                    try:
+                        self._client.cancel_order(order.exchange_order_id, symbol=ccxt_symbol)
+                    except OrderNotFound as e:
+                        self._logger.warn('order not found. probably already executed. skip {} {}'.format(order, e))
 
             self._limit_orders.append(Order(
                 timestamp=now,
