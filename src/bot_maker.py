@@ -113,6 +113,10 @@ class BotMaker:
             order = self._limit_orders[i]
             ccxt_symbol = self._symbol_to_ccxt_symbol(order.symbol)
 
+            if order.exchange_order_id is None:
+                self._logger.info('order not submitted. skip {}'.format(order))
+                continue
+
             exchange_order = None
             for exchange_order2 in exchange_orders:
                 if exchange_order2['id'] == order.exchange_order_id:
