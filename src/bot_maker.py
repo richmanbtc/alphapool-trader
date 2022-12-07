@@ -293,7 +293,7 @@ class BotMaker:
             status = exchange_order['status']
 
             if status == 'open' and order.expired(now):
-                self._logger.info('order expired. cancel order {}'.format(order['exchange_order_id']))
+                self._logger.info('order expired. cancel order {}'.format(order))
                 self._client.cancel_order(order.exchange_order_id, symbol=ccxt_symbol)
 
             if status != 'open' and order.get_position(now) == 0:
