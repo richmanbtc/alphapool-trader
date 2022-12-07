@@ -97,6 +97,66 @@ class BotMaker:
             # you can safely force sync the positions acquired during that time.
             self._force_sync_exchange_positions(df_current_pos)
 
+    def _sync_limit_orders(self):
+        self._logger.info('_sync_limit_orders')
+
+        now = time.time()
+        position_changed = False
+
+        ccxt_symbols = set([self._symbol_to_ccxt_symbol(x.symbol) for x in self._limit_orders])
+        self._logger.info('fetch_open_orders ccxt_symbols {}'.format(ccxt_symbols))
+        exchange_orders = []
+        for ccxt_symbol in ccxt_symbols:
+            exchange_orders += self._client.fetch_open_orders(ccxt_symbol)
+
+        for i in range(len(self._limit_orders))[::-1]:
+            order = self._limit_orders[i]
+            ccxt_symbol = self._symbol_to_ccxt_symbol(order.symbol)
+
+            exchange_order = None
+            for exchange_order2 in exchange_orders:
+                if exchange_order2['id'] == order.exchange_order_id:
+                    exchange_order = exchange_order2
+                    exchange_orders.remove(exchange_order2)
+                    break
+            if exchange_order is None:
+                try:
+                    exchange_order = self._client.fetch_order(order.exchange_order_id, symbol=ccxt_symbol)
+                except OrderNotFound as e:
+                    self._logger.warn('order not found. remove {} {}'.format(order, e))
+                    self._limit_orders.pop(i)
+                    continue
+
+            signed_executed = (exchange_order['filled'] - order.executed_amount) * order.side_int()
+            self._exchange_positions[order.symbol] += signed_executed
+            position_changed = True
+
+            if order.executed_amount != exchange_order['filled']:
+                self._logger.info('order executed old local {} new exchange {}'.format(order, exchange_order))
+            order.executed_amount = exchange_order['filled']
+            status = exchange_order['status']
+
+            if status == 'open' and order.expired(now):
+                self._logger.info('order expired. cancel order {}'.format(order))
+                self._client.cancel_order(order.exchange_order_id, symbol=ccxt_symbol)
+
+            if status != 'open' and order.get_position(now) == 0:
+                self._logger.info('order exited. remove {}'.format(order))
+                self._limit_orders.pop(i)
+
+        for exchange_order in exchange_orders:
+            self._logger.info('cancel unknown order {}'.format(exchange_order['id']))
+            self._client.cancel_order(exchange_order['id'], symbol=exchange_order['symbol'])
+
+        return position_changed
+
+    def _force_sync_exchange_positions(self, df_current_pos):
+        self._logger.info('force sync exchange positions')
+        self._logger.info('df_current_pos {}'.format(df_current_pos))
+        self._exchange_positions = defaultdict(float)
+        for ccxt_symbol in df_current_pos.index:
+            self._exchange_positions[ccxt_symbol_to_symbol(ccxt_symbol)] = df_current_pos.loc[ccxt_symbol, 'position']
+
     def _fetch_models(self, collateral, markets):
         now = time.time()
 
@@ -252,66 +312,6 @@ class BotMaker:
                 self._limit_orders.pop(i)
             else:
                 order.exchange_order_id = res['id']
-
-    def _sync_limit_orders(self):
-        self._logger.info('_sync_limit_orders')
-
-        now = time.time()
-        position_changed = False
-
-        ccxt_symbols = set([self._symbol_to_ccxt_symbol(x.symbol) for x in self._limit_orders])
-        self._logger.info('fetch_open_orders ccxt_symbols {}'.format(ccxt_symbols))
-        exchange_orders = []
-        for ccxt_symbol in ccxt_symbols:
-            exchange_orders += self._client.fetch_open_orders(ccxt_symbol)
-
-        for i in range(len(self._limit_orders))[::-1]:
-            order = self._limit_orders[i]
-            ccxt_symbol = self._symbol_to_ccxt_symbol(order.symbol)
-
-            exchange_order = None
-            for exchange_order2 in exchange_orders:
-                if exchange_order2['id'] == order.exchange_order_id:
-                    exchange_order = exchange_order2
-                    exchange_orders.remove(exchange_order2)
-                    break
-            if exchange_order is None:
-                try:
-                    exchange_order = self._client.fetch_order(order.exchange_order_id, symbol=ccxt_symbol)
-                except OrderNotFound as e:
-                    self._logger.warn('order not found. remove {} {}'.format(order, e))
-                    self._limit_orders.pop(i)
-                    continue
-
-            signed_executed = (exchange_order['filled'] - order.executed_amount) * order.side_int()
-            self._exchange_positions[order.symbol] += signed_executed
-            position_changed = True
-
-            if order.executed_amount != exchange_order['filled']:
-                self._logger.info('order executed old local {} new exchange {}'.format(order, exchange_order))
-            order.executed_amount = exchange_order['filled']
-            status = exchange_order['status']
-
-            if status == 'open' and order.expired(now):
-                self._logger.info('order expired. cancel order {}'.format(order))
-                self._client.cancel_order(order.exchange_order_id, symbol=ccxt_symbol)
-
-            if status != 'open' and order.get_position(now) == 0:
-                self._logger.info('order exited. remove {}'.format(order))
-                self._limit_orders.pop(i)
-
-        for exchange_order in exchange_orders:
-            self._logger.info('cancel unknown order {}'.format(exchange_order['id']))
-            self._client.cancel_order(exchange_order['id'], symbol=exchange_order['symbol'])
-
-        return position_changed
-
-    def _force_sync_exchange_positions(self, df_current_pos):
-        self._logger.info('force sync exchange positions')
-        self._logger.info('df_current_pos {}'.format(df_current_pos))
-        self._exchange_positions = defaultdict(float)
-        for ccxt_symbol in df_current_pos.index:
-            self._exchange_positions[ccxt_symbol_to_symbol(ccxt_symbol)] = df_current_pos.loc[ccxt_symbol, 'position']
 
     def _create_order(self, market=None, signed_amount=None, price=None, reduce_only=False):
         time.sleep(self._order_interval)
