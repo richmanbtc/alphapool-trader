@@ -8,6 +8,7 @@ from .utils import (
 from .logger import create_logger
 from .bot_maker import BotMaker
 from .alphapool_mock import MockClient
+from .panic_manager import PanicManager
 
 
 def start():
@@ -20,14 +21,19 @@ def start():
     log_level = os.getenv('ALPHAPOOL_LOG_LEVEL')
     model_id = os.getenv('ALPHAPOOL_MODEL_ID')
 
+    logger = create_logger(log_level)
+
+    panic_manager = PanicManager(logger=logger)
+    panic_manager.register('bot', 5 * 60, 5 * 60)
+    def health_check_ping():
+        panic_manager.ping('bot')
+
     database_url = os.getenv("ALPHAPOOL_DATABASE_URL")
     if database_url == 'mock':
         alphapool_client = MockClient()
     else:
         db = dataset.connect(database_url)
         alphapool_client = Client(db)
-
-    logger = create_logger(log_level)
 
     client = create_ccxt_client(
         exchange=exchange,
@@ -42,7 +48,8 @@ def start():
         logger=logger,
         leverage=leverage,
         alphapool_client=alphapool_client,
-        model_id=model_id
+        model_id=model_id,
+        health_check_ping=health_check_ping,
     )
     bot.run()
 

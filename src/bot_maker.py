@@ -22,7 +22,7 @@ from .utils import (
 
 class BotMaker:
     def __init__(self, client=None, logger=None, leverage=None,
-                 alphapool_client=None, model_id=None):
+                 alphapool_client=None, model_id=None, health_check_ping=None):
         self._client = client
         self._logger = logger
         self._order_interval = 1
@@ -31,6 +31,7 @@ class BotMaker:
         self._alphapool_client = alphapool_client
         self._model_id = model_id
         self._leverage_set = set()
+        self.health_check_ping = health_check_ping
 
         # strategy
         self._positions = {}
@@ -51,6 +52,7 @@ class BotMaker:
                     initialized = True
 
                 self._step()
+                self.health_check_ping()
             except Exception as e:
                 self._logger.error(e)
                 self._logger.error(traceback.format_exc())
@@ -252,10 +254,13 @@ class BotMaker:
                 order.exchange_order_id = res['id']
 
     def _sync_limit_orders(self):
+        self._logger.info('_sync_limit_orders')
+
         now = time.time()
         position_changed = False
 
         ccxt_symbols = set([self._symbol_to_ccxt_symbol(x.symbol) for x in self._limit_orders])
+        self._logger.info('fetch_open_orders ccxt_symbols {}'.format(ccxt_symbols))
         exchange_orders = []
         for ccxt_symbol in ccxt_symbols:
             exchange_orders += self._client.fetch_open_orders(ccxt_symbol)
