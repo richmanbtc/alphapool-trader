@@ -5,7 +5,7 @@ RUN pip install --no-cache-dir \
     ccxt==1.93.98 \
     coverage==6.2 \
     numpy==1.23.3 \
-    pandas==1.5.0 \
+    pandas==1.5.2 \
     schedule==1.1.0 \
     "git+https://github.com/richmanbtc/alphapool.git@v0.1.5#egg=alphapool" \
     dataset==1.5.2 \
