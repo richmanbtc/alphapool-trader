@@ -36,7 +36,7 @@ class BotMaker:
         self._positions = {}
         self._weights = {}
         self._limit_orders = []
-        self._processed_rows = set()
+        self._order_processed_rows = set()
 
         # exchange states
         self._exchange_positions = defaultdict(float)
@@ -55,6 +55,7 @@ class BotMaker:
                 self._logger.error(e)
                 self._logger.error(traceback.format_exc())
 
+            self._remove_old_data()
             time.sleep(self._loop_interval)
 
     def _initialize(self):
@@ -64,22 +65,28 @@ class BotMaker:
                 'coin': 'USDT',
                 'mode': 'MergedSingle'
             })
-
-        df_current_pos = fetch_positions(self._client)
-        df_current_pos = df_current_pos.loc[df_current_pos['position'] != 0]
-        self._force_sync_exchange_positions(df_current_pos)
-
         self._logger.info('initialized')
 
     def _step(self):
+        self._logger.debug('_positions {}'.format(self._positions))
+        self._logger.debug('_weights {}'.format(self._weights))
+        self._logger.debug('_limit_orders {}'.format(self._limit_orders))
+        self._logger.debug('_order_processed_rows {}'.format(self._order_processed_rows))
+        self._logger.debug('_exchange_positions {}'.format(self._exchange_positions))
+
+        self._sync_limit_orders_and_exchange_positions()
+
         collateral = fetch_collateral(self._client)
         self._logger.info('collateral {}'.format(collateral))
         markets = {market['symbol']: fix_market(market, self._client.id)
                    for market in self._client.fetch_markets()}
-
         self._fetch_models(collateral, markets)
+
+        target_positions = self._get_target_positions(collateral, markets)
+        self._sync_taker_positions(target_positions)
         self._submit_limit_orders(markets)
 
+    def _sync_limit_orders_and_exchange_positions(self):
         df_current_pos = fetch_positions(self._client)
         df_current_pos = df_current_pos.loc[df_current_pos['position'] != 0]
         position_changed = self._sync_limit_orders()
@@ -87,10 +94,6 @@ class BotMaker:
             # Since the order has not been filled since the last order sync until now,
             # you can safely force sync the positions acquired during that time.
             self._force_sync_exchange_positions(df_current_pos)
-
-        target_positions = self._get_target_positions(collateral, markets)
-        self._sync_taker_positions(target_positions)
-        self._submit_limit_orders(markets)
 
     def _fetch_models(self, collateral, markets):
         now = time.time()
@@ -116,43 +119,54 @@ class BotMaker:
                 return True
             return False
 
-        limit_order_amounts = defaultdict(float)
+        if self._model_id in df.index:
+            new_weights = df.loc[self._model_id, 'weights']
+        else:
+            new_weights = {}
+        if self._weights != new_weights:
+            self._logger.info('weight updated {}'.format(new_weights))
+            self._weights = new_weights
 
+        # process positions
+        new_positions = {}
         for row in df.itertuples():
             model_id = row.Index
-            timestamp = row.timestamp
-            if (timestamp, model_id) in self._processed_rows:
-                continue
-            self._processed_rows.add((timestamp, model_id))
-            self._logger.info('process row {} {}'.format(timestamp, model_id))
-
-            self._positions[model_id] = {}
+            new_positions[model_id] = {}
             for symbol in row.positions:
                 if skip_symbol_not_exit(symbol):
                     continue
-                self._logger.info('position updated {} {} {}'.format(model_id, symbol, row.positions[symbol]))
-                self._positions[model_id][symbol] = row.positions[symbol]
+                new_positions[model_id][symbol] = row.positions[symbol]
+        if self._positions != new_positions:
+            self._logger.info('position updated {}'.format(new_positions))
+            self._positions = new_positions
 
-            if model_id == self._model_id:
-                self._logger.info('weight updated {}'.format(row.weights))
-                self._weights = row.weights
+        # process orders
+        limit_order_amounts = defaultdict(float)
+        for row in df.itertuples():
+            model_id = row.Index
+            timestamp = row.timestamp
+            if (timestamp, model_id) in self._order_processed_rows:
+                continue
+            self._order_processed_rows.add((timestamp, model_id))
+            self._logger.info('process order row {} {}'.format(timestamp, model_id))
 
-            if pd.to_datetime(now - 300, unit='s', utc=True) < timestamp:
-                for symbol in row.orders:
-                    if skip_symbol_not_exit(symbol):
-                        continue
-                    for order in row.orders[symbol]:
-                        weight = self._weights.get(model_id, 0.0)
-                        key = (timestamp.timestamp(), symbol, order['price'], order['is_buy'], order['duration'])
-                        limit_order_amounts[key] += amount_to_exchange_amount(
-                            amount=order['amount'] * weight,
-                            leverage=self._leverage,
-                            collateral=collateral,
-                            price=order['price'],
-                            market=markets[self._symbol_to_ccxt_symbol(symbol)]
-                        )
-            else:
+            if order_is_old(now, timestamp):
                 self._logger.info('too old order. skip')
+                continue
+
+            for symbol in row.orders:
+                if skip_symbol_not_exit(symbol):
+                    continue
+                for order in row.orders[symbol]:
+                    weight = self._weights.get(model_id, 0.0)
+                    key = (timestamp.timestamp(), symbol, order['price'], order['is_buy'], order['duration'])
+                    limit_order_amounts[key] += amount_to_exchange_amount(
+                        amount=order['amount'] * weight,
+                        leverage=self._leverage,
+                        collateral=collateral,
+                        price=order['price'],
+                        market=markets[self._symbol_to_ccxt_symbol(symbol)]
+                    )
 
         for key in limit_order_amounts:
             amount = limit_order_amounts[key]
@@ -189,8 +203,9 @@ class BotMaker:
 
             signed_amount = target_pos - cur_pos
             if self._reduce_only_enabled() and signed_amount * cur_pos < 0:
-                reduce_only = True
+                # to reduce instant leverage peak
                 signed_amount = np.sign(signed_amount) * min(np.abs(signed_amount), np.abs(cur_pos))
+                reduce_only = True
             else:
                 reduce_only = False
 
@@ -342,7 +357,7 @@ class BotMaker:
         amount = np.abs(signed_amount)
         if self._client.id == 'bitflyer':
             amount = '{:.8f}'.format(amount)
-        return self._client.create_order(
+        res = self._client.create_order(
             symbol,
             order_type,
             'sell' if signed_amount < 0 else 'buy',
@@ -350,6 +365,8 @@ class BotMaker:
             price,
             params
         )
+        self._logger.info('order created {}'.format(res))
+        return res
 
     def _ensure_leverage(self, market, leverage):
         if self._client.id == 'bitflyer':
@@ -364,6 +381,12 @@ class BotMaker:
         ))
         set_leverage(self._client, market, leverage)
         self._leverage_set.add(symbol)
+
+    def _remove_old_data(self):
+        now = time.time()
+        self._order_processed_rows = set(
+            [x for x in self._order_processed_rows if not order_is_old(now, x[0])]
+        )
 
     def _get_target_positions(self, collateral, markets):
         now = time.time()
@@ -395,6 +418,7 @@ class BotMaker:
     def _reduce_only_enabled(self):
         return self._client.id not in ['bitflyer']
 
+
 @dataclasses.dataclass
 class Order:
     timestamp: float
@@ -424,6 +448,10 @@ class Order:
 
     def side_int(self):
         return 1 if self.is_buy else -1
+
+
+def order_is_old(now, timestamp):
+    return timestamp < pd.to_datetime(now - 300, unit='s', utc=True)
 
 
 def amount_to_exchange_amount(amount, leverage, collateral, price, market):
