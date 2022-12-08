@@ -31,7 +31,7 @@ class BotMaker:
         self._alphapool_client = alphapool_client
         self._model_id = model_id
         self._leverage_set = set()
-        self.health_check_ping = health_check_ping
+        self._health_check_ping = health_check_ping
 
         # strategy
         self._positions = {}
@@ -52,7 +52,7 @@ class BotMaker:
                     initialized = True
 
                 self._step()
-                self.health_check_ping()
+                self._health_check_ping()
             except Exception as e:
                 self._logger.error(e)
                 self._logger.error(traceback.format_exc())
