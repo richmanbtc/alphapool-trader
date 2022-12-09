@@ -445,10 +445,11 @@ class Order:
             return 0.0
         exit_duration = 60 * 60
         expire_at = self.timestamp + self.duration
+        exit_at = expire_at + exit_duration
         if now <= expire_at:
             return self.executed_amount
-        elif now <= expire_at + exit_duration:
-            return self.executed_amount * (now - expire_at) / exit_duration
+        elif now <= exit_at:
+            return self.executed_amount * (exit_at - now) / exit_duration
         return 0.0
 
     def expired(self, now):
