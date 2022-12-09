@@ -275,9 +275,14 @@ class BotMaker:
             else:
                 reduce_only = False
 
-            for order in self._limit_orders:
-                if (order.symbol == symbol and order.price is None
-                    and order.exchange_order_id is not None):
+            for order in list(self._limit_orders):
+                if not (order.symbol == symbol and order.price is None):
+                    continue
+
+                if order.exchange_order_id is None:
+                    self._logger.info('remove old order {}'.format(order))
+                    self._limit_orders.remove(order)
+                else:
                     self._logger.info('cancel old order {}'.format(order))
                     ccxt_symbol = self._symbol_to_ccxt_symbol(order.symbol)
                     try:
