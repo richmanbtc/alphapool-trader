@@ -1,7 +1,6 @@
+import os
 import threading
-import sys
 import time
-
 
 class PanicManager:
     def __init__(self, logger=None):
@@ -22,11 +21,12 @@ class PanicManager:
             }
 
     def ping(self, tag=None):
+        self.logger.debug('panic_manager ping {}'.format(tag))
         with self.lock:
             self.monitors[tag]['ping_at'] = time.time()
 
     def panic(self):
-        sys.exit(1)
+        os._exit(1)
 
     def run(self):
         while True:
