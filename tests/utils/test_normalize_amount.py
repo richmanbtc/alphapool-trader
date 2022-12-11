@@ -35,3 +35,6 @@ class TestUtilsNormalizeAmount(TestCase):
 
     def test_negative(self):
         self.assertEqual(normalize_amount(-1, price=4, market=market), -1)
+
+    def test_reduce_only(self):
+        self.assertEqual(normalize_amount(0.5, price=8, market=market, reduce_only=True), 0.5)
