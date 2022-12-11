@@ -133,9 +133,9 @@ class BotMaker:
 
             signed_executed = (exchange_order['filled'] - order.executed_amount) * order.side_int()
             self._exchange_positions[order.symbol] += signed_executed
-            position_changed = True
 
-            if order.executed_amount != exchange_order['filled']:
+            if signed_executed != 0:
+                position_changed = True
                 self._logger.info('order executed old local {} new exchange {}'.format(order, exchange_order))
             order.executed_amount = exchange_order['filled']
             status = exchange_order['status']
@@ -268,6 +268,8 @@ class BotMaker:
                 continue
 
             signed_amount = target_pos - cur_pos
+
+            # TODO: handle position error
             if self._reduce_only_enabled() and signed_amount * cur_pos < 0:
                 # to reduce instant leverage peak
                 signed_amount = np.sign(signed_amount) * min(np.abs(signed_amount), np.abs(cur_pos))
