@@ -269,13 +269,10 @@ class BotMaker:
 
             signed_amount = target_pos - cur_pos
 
-            # TODO: handle position error
-            if self._reduce_only_enabled() and signed_amount * cur_pos < 0:
-                # to reduce instant leverage peak
+            # use reduce_only to reduce instant leverage peak
+            reduce_only = use_reduce_only(signed_amount=signed_amount, cur_pos=cur_pos, exchange=self._client.id)
+            if reduce_only:
                 signed_amount = np.sign(signed_amount) * min(np.abs(signed_amount), np.abs(cur_pos))
-                reduce_only = True
-            else:
-                reduce_only = False
 
             for order in list(self._limit_orders):
                 if not (order.symbol == symbol and order.price is None):
@@ -431,9 +428,6 @@ class BotMaker:
     def _symbol_to_ccxt_symbol(self, symbol):
         return symbol_to_ccxt_symbol(symbol, self._client.id)
 
-    def _reduce_only_enabled(self):
-        return self._client.id not in ['bitflyer']
-
 
 @dataclasses.dataclass
 class Order:
@@ -481,3 +475,11 @@ def fix_market(market, exchange):
         market['precision'] = {'amount': 0.00000001, 'price': 1.0}
         market['contractSize'] = 1.0
     return market
+
+
+def use_reduce_only(signed_amount, cur_pos, exchange):
+    if exchange in ['bitflyer']:
+        return False
+    if np.abs(cur_pos) * 10 < np.abs(signed_amount):
+        return False
+    return signed_amount * cur_pos < 0
