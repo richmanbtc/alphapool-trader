@@ -1,4 +1,6 @@
+import json
 from unittest import TestCase
+import numpy as np
 from parameterized import parameterized
 from src.bot_maker import use_reduce_only
 
@@ -71,3 +73,10 @@ class TestBotMakerIsReduceOnly(TestCase):
             exchange=params['exchange'],
         ), params['expected'])
 
+        # https://stackoverflow.com/questions/58408054/typeerror-object-of-type-bool-is-not-json-serializable
+        res = use_reduce_only(
+            signed_amount=np.float32(params['signed_amount']),
+            cur_pos=np.float32(params['cur_pos']),
+            exchange=params['exchange'],
+        )
+        json.dumps({ 'res': res })

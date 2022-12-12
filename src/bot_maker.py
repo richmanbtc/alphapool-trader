@@ -482,4 +482,8 @@ def use_reduce_only(signed_amount, cur_pos, exchange):
         return False
     if np.abs(cur_pos) * 10 < np.abs(signed_amount):
         return False
-    return signed_amount * cur_pos < 0
+    # https://stackoverflow.com/questions/58408054/typeerror-object-of-type-bool-is-not-json-serializable
+    if signed_amount * cur_pos < 0:
+        return True
+    else:
+        return False
