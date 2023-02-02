@@ -20,7 +20,7 @@ services:
       ALPHAPOOL_MODEL_ID: ${ALPHAPOOL_MODEL_ID:-mock}
       ALPHAPOOL_DATABASE_URL: mock
     command: python -m src.main
-    restart: always
+#    restart: always
     logging:
       driver: "json-file"
       options:
