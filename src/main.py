@@ -9,6 +9,8 @@ from .logger import create_logger
 from .bot_maker import BotMaker
 from .alphapool_mock import MockClient
 from .panic_manager import PanicManager
+from .stock.stock_client import StockClient
+from .stock.bot_stock import BotStock
 
 
 def start():
@@ -17,6 +19,7 @@ def start():
     api_secret = os.getenv('CCXT_API_SECRET')
     api_password = os.getenv('CCXT_API_PASSWORD')
     subaccount = os.getenv('CCXT_SUBACCOUNT')
+    api_base_url = os.getenv('CCXT_API_BASE_URL') # for stock
     leverage = float(os.getenv('ALPHAPOOL_LEVERAGE'))
     log_level = os.getenv('ALPHAPOOL_LOG_LEVEL')
     model_id = os.getenv('ALPHAPOOL_MODEL_ID')
@@ -35,22 +38,40 @@ def start():
         db = dataset.connect(database_url)
         alphapool_client = Client(db)
 
-    client = create_ccxt_client(
-        exchange=exchange,
-        api_key=api_key,
-        api_secret=api_secret,
-        api_password=api_password,
-        subaccount=subaccount,
-    )
+    if exchange in ['kabucom']:
+        client = StockClient(
+            api_key=api_key,
+            api_password=api_password,
+            api_base_url=api_base_url,
+            is_corp=True,
+        )
 
-    bot = BotMaker(
-        client=client,
-        logger=logger,
-        leverage=leverage,
-        alphapool_client=alphapool_client,
-        model_id=model_id,
-        health_check_ping=health_check_ping,
-    )
+        bot = BotStock(
+            client=client,
+            logger=logger,
+            leverage=leverage,
+            alphapool_client=alphapool_client,
+            model_id=model_id,
+            health_check_ping=health_check_ping,
+        )
+    else:
+        client = create_ccxt_client(
+            exchange=exchange,
+            api_key=api_key,
+            api_secret=api_secret,
+            api_password=api_password,
+            subaccount=subaccount,
+        )
+
+        bot = BotMaker(
+            client=client,
+            logger=logger,
+            leverage=leverage,
+            alphapool_client=alphapool_client,
+            model_id=model_id,
+            health_check_ping=health_check_ping,
+        )
+
     bot.run()
 
 

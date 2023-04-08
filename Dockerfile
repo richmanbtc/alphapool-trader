@@ -8,9 +8,12 @@ RUN pip install --no-cache-dir \
     pandas==1.5.2 \
     parameterized==0.8.1 \
     "git+https://github.com/richmanbtc/alphapool.git@v0.1.5#egg=alphapool" \
+    "git+https://github.com/richmanbtc/ccxt_rate_limiter.git@v0.0.6#egg=ccxt_rate_limiter" \
     dataset==1.5.2 \
     psycopg2==2.9.3 \
-    SQLAlchemy==1.4.45
+    SQLAlchemy==1.4.45 \
+    retry==0.9.2 \
+    requests==2.28.2
 
 ADD . /app
 ENV ALPHAPOOL_LOG_LEVEL debug
