@@ -60,7 +60,7 @@ class StockClient:
         return self._request('/token', 'get', { 'APIPassword': self._api_key })
 
     def _request(self, path, method, options):
-        url = '{}{}'.format(self.api_base_url, path)
+        url = '{}{}'.format(self._api_base_url, path)
         headers = {
             'Content-Type': 'application/json',
         }
