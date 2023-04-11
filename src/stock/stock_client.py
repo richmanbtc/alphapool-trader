@@ -70,7 +70,7 @@ class StockClient:
                 self._api_token_fetched_at = time.time()
             headers['X-API-KEY'] = self._api_token
         self._rate_limiter.rate_limit()
-        res = requests.request(url, method=method, json=options, headers=headers)
+        res = requests.request(method, url, json=options, headers=headers)
         return res.json()
 
     def _token_exists(self):
