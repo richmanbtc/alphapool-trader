@@ -81,4 +81,5 @@ class StockClient:
         if not hasattr(self, '_api_token'):
             return False
         day = 24 * 60 * 60
-        return time.time() // day == self._api_token_fetched_at // day
+        shift = 9 * 60 * 60
+        return (time.time() + shift) // day == (self._api_token_fetched_at + shift) // day
