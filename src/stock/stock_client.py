@@ -62,6 +62,7 @@ class StockClient:
     def _request(self, path, method, options):
         url = '{}{}'.format(self._api_base_url, path)
         headers = {
+            'Host': 'localhost',
             'Content-Type': 'application/json',
         }
         if path != '/token':
