@@ -44,6 +44,7 @@ def start():
             api_password=api_password,
             api_base_url=api_base_url,
             is_corp=True,
+            logger=logger,
         )
 
         bot = BotStock(

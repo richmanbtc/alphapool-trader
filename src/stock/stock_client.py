@@ -5,12 +5,13 @@ from ccxt_rate_limiter.rate_limiter import RateLimiter
 
 # margin trading
 class StockClient:
-    def __init__(self, api_key, api_password, api_base_url, is_corp):
+    def __init__(self, api_key, api_password, api_base_url, is_corp, logger):
         self._api_key = api_key
         self._api_password = api_password
         self._api_base_url = api_base_url
         self._is_corp = is_corp
         self._rate_limiter = RateLimiter(period_sec=0.3, count=1)
+        self._logger = logger
 
     def fetch_wallet_cash(self):
         return self._request('/wallet/cash', 'get')
@@ -72,7 +73,9 @@ class StockClient:
             headers['X-API-KEY'] = self._api_token
         self._rate_limiter.rate_limit()
         res = requests.request(method, url, json=options, headers=headers)
-        return res.json()
+        decoded = res.json()
+        self._logger.debug(decoded)
+        return decoded
 
     def _token_exists(self):
         if not hasattr(self, '_api_token'):
