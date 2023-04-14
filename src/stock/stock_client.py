@@ -58,7 +58,7 @@ class StockClient:
         })
 
     def _fetch_token(self):
-        return self._request('/token', 'get', { 'APIPassword': self._api_key })
+        return self._request('/token', 'post', { 'APIPassword': self._api_key })
 
     def _request(self, path, method, options):
         url = '{}{}'.format(self._api_base_url, path)
