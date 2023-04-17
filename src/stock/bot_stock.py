@@ -141,7 +141,7 @@ class BotStock:
         return merged
 
     def _fetch_cash(self):
-        wallet = self._client.fetch_margin()
+        wallet = self._client.fetch_wallet_margin()
         return wallet['StockAccountWallet']
 
     def _cancel_all_orders(self):
