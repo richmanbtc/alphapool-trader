@@ -13,6 +13,12 @@ class StockClient:
         self._rate_limiter = RateLimiter(period_sec=0.3, count=1)
         self._logger = logger
 
+    def fetch_board(self, symbol):
+        return self._request('/board/{}@1'.format(symbol), 'get')
+
+    def fetch_regulations(self, symbol):
+        return self._request('/regulations/{}@1'.format(symbol), 'get')
+
     def fetch_wallet_cash(self):
         return self._request('/wallet/cash', 'get')
 

@@ -72,15 +72,22 @@ class BotStock:
         front_order_type = 'opening_market' if is_opening else 'closing_market'
 
         for symbol in set(target_pos.keys()) | set(current_pos.keys()):
+            board = self._client.fetch_board(symbol)
+            price = board['PreviousClose']
+
             cur = current_pos[symbol]
-            amount = target_pos[symbol] * self._leverage * collateral / cur['price'] - cur['pos']
+            amount = target_pos[symbol] * self._leverage * collateral / price - cur['pos']
             amount_unit = 100
             amount = round(amount / amount_unit) * amount_unit
+
+            reg = self._client.fetch_regulations(symbol)
+            amount = _apply_regulations(amount, reg)
+
             if amount == 0:
                 continue
 
-            if amount * current_pos[symbol] < 0:
-                close_amount = min(np.abs(amount), np.abs(current_pos[symbol]))
+            if amount * cur['pos'] < 0:
+                close_amount = min(np.abs(amount), np.abs(cur['pos']))
                 self._logger.info('create_order symbol {} amount {} close_amount {} front_order_type {}'.format(
                     symbol, amount, close_amount, front_order_type))
                 self._client.create_order(
@@ -121,21 +128,16 @@ class BotStock:
         positions = df.groupby('model_id')['positions'].nth(-1)
         for pos in positions:
             for symbol in pos:
-                merged[symbol] += pos[symbol] / positions.shape[0]
+                merged[symbol.replace('.T', '')] += pos[symbol] / positions.shape[0]
 
         return merged
 
     def _fetch_current_positions(self):
         positions = self._client.fetch_positions()
-        merged = defaultdict(dict)
+        merged = defaultdict({ 'pos': 0.0, 'pnl': 0.0 })
         for pos in positions:
             symbol = pos['Symbol']
             side_int = 2 * int(pos['Side']) - 3
-            merged[symbol] = merged[symbol] or {
-                'pos': 0.0,
-                'price': pos['CurrentPrice'],
-                'pnl': 0.0,
-            }
             merged[symbol]['pos'] += side_int * pos['LeavesQty']
             merged[symbol]['pnl'] += pos['ProfitLoss']
         return merged
@@ -147,6 +149,21 @@ class BotStock:
     def _cancel_all_orders(self):
         orders = self._client.fetch_orders()
         for order in orders:
-            if order['State'] != '5':
+            if int(order['State']) != 5:
                 self._logger.info('cancel_order {}'.format(order))
                 self._client.cancel_order(order['ID'])
+
+
+def _apply_regulations(amount, reg):
+    for r in reg['RegulationsInfo']:
+        if int(r['Exchange']) != 1:
+            continue
+        if int(r['Product']) != 2:
+            continue
+
+        if int(r['Side']) == 1:
+            amount = max(0, amount)
+        elif int(r['Side']) == 2:
+            amount = min(0, amount)
+
+    return amount
