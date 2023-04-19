@@ -78,6 +78,7 @@ class StockClient:
                 self._api_token_fetched_at = time.time()
             headers['X-API-KEY'] = self._api_token
         self._rate_limiter.rate_limit()
+        self._logger.debug('{} {}'.format(method, url))
         if method == 'get':
             res = requests.request(method, url, params=options, headers=headers)
         else:
