@@ -134,7 +134,7 @@ class BotStock:
 
     def _fetch_current_positions(self):
         positions = self._client.fetch_positions()
-        merged = defaultdict({ 'pos': 0.0, 'pnl': 0.0 })
+        merged = defaultdict(lambda: { 'pos': 0.0, 'pnl': 0.0 })
         for pos in positions:
             symbol = pos['Symbol']
             side_int = 2 * int(pos['Side']) - 3
