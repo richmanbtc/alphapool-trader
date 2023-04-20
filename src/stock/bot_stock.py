@@ -77,11 +77,15 @@ class BotStock:
 
             cur = current_pos[symbol]
             amount = target_pos[symbol] * self._leverage * collateral / price - cur['pos']
+            ideal_amount = amount
             amount_unit = 100
             amount = round(amount / amount_unit) * amount_unit
 
             reg = self._client.fetch_regulations(symbol)
             amount = _apply_regulations(amount, reg)
+
+            self.logger.debug('symbol {} ideal_amount {} amount {} price {}'.format(
+                symbol, ideal_amount, amount, price))
 
             if amount == 0:
                 continue
