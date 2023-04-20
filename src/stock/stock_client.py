@@ -1,6 +1,8 @@
+import json
 import requests
 import time
 from ccxt_rate_limiter.rate_limiter import RateLimiter
+from numpyencoder import NumpyEncoder
 
 
 # margin trading
@@ -79,6 +81,7 @@ class StockClient:
             headers['X-API-KEY'] = self._api_token
         self._rate_limiter.rate_limit()
         self._logger.debug('{} {}'.format(method, url))
+        options = json.loads(json.dumps(options, cls=NumpyEncoder))
         if method == 'get':
             res = requests.request(method, url, params=options, headers=headers)
         else:

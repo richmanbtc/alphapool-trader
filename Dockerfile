@@ -13,7 +13,8 @@ RUN pip install --no-cache-dir \
     psycopg2==2.9.3 \
     SQLAlchemy==1.4.45 \
     retry==0.9.2 \
-    requests==2.28.2
+    requests==2.28.2 \
+    numpyencoder==0.3.0
 
 ADD . /app
 ENV ALPHAPOOL_LOG_LEVEL debug
