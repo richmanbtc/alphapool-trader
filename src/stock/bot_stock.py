@@ -84,7 +84,7 @@ class BotStock:
             reg = self._client.fetch_regulations(symbol)
             amount = _apply_regulations(amount, reg)
 
-            self.logger.debug('symbol {} ideal_amount {} amount {} price {}'.format(
+            self._logger.debug('symbol {} ideal_amount {} amount {} price {}'.format(
                 symbol, ideal_amount, amount, price))
 
             if amount == 0:
