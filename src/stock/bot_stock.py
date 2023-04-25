@@ -65,6 +65,8 @@ class BotStock:
         self._logger.debug('cash {}'.format(cash))
         self._logger.debug('collateral {}'.format(collateral))
 
+        day_margin_symbols = self._fetch_day_margin_symbols()
+
         self._cancel_all_orders()
 
         # create order
@@ -72,6 +74,8 @@ class BotStock:
         front_order_type = 'opening_market' if is_opening else 'closing_market'
 
         for symbol in set(target_pos.keys()) | set(current_pos.keys()):
+            self._health_check_ping()
+
             board = self._client.fetch_board(symbol)
             price = board['PreviousClose']
 
@@ -83,6 +87,10 @@ class BotStock:
 
             reg = self._client.fetch_regulations(symbol)
             amount = _apply_regulations(amount, reg)
+
+            if symbol not in day_margin_symbols:
+                self._logger.debug('{} day margin not available'.format(symbol))
+                amount = 0
 
             self._logger.debug('symbol {} ideal_amount {} amount {} price {}'.format(
                 symbol, ideal_amount, amount, price))
@@ -156,6 +164,12 @@ class BotStock:
             if int(order['State']) != 5:
                 self._logger.info('cancel_order {}'.format(order))
                 self._client.cancel_order(order['ID'])
+
+    def _fetch_day_margin_symbols(self):
+        url = 'https://kabu.com/pdf/Gmkpdf/shinyou/meigara_list.csv'
+        df = pd.read_csv(url, encoding='shift_jis', skiprows=1)
+        df = df.loc[df['種類'] == 'デイトレ']
+        return df['銘柄コード'].astype(str).tolist()
 
 
 def _apply_regulations(amount, reg):
