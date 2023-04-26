@@ -65,6 +65,20 @@ class StockClient:
             'OrderId': order_id,
         })
 
+    def register(self, symbols):
+        return self._request('/register', 'put', {
+            'Symbols': [
+                {
+                    'Symbol': x,
+                    'Exchange': 1,
+                }
+                for x in symbols
+            ]
+        })
+
+    def unregister_all(self):
+        return self._request('/unregister/all', 'put')
+
     def _fetch_token(self):
         return self._request('/token', 'post', { 'APIPassword': self._api_key })
 

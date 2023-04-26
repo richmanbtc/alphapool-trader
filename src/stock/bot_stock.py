@@ -66,6 +66,7 @@ class BotStock:
         self._logger.debug('collateral {}'.format(collateral))
 
         day_margin_symbols = self._fetch_day_margin_symbols()
+        self._logger.debug('day_margin_symbols {}'.format(day_margin_symbols))
 
         self._cancel_all_orders()
 
@@ -73,8 +74,12 @@ class BotStock:
         margin_trade_type = 'day' # currently
         front_order_type = 'opening_market' if is_opening else 'closing_market'
 
-        for symbol in set(target_pos.keys()) | set(current_pos.keys()):
+        symbols = list((set(target_pos.keys()) | set(current_pos.keys())) - set(day_margin_symbols))
+        for symbol_i, symbol in symbols:
             self._health_check_ping()
+
+            if symbol_i % 50 == 0:
+                self._register_symbols(symbols[symbol_i:symbol_i + 50])
 
             board = self._client.fetch_board(symbol)
             price = board['PreviousClose']
@@ -171,6 +176,9 @@ class BotStock:
         df = df.loc[df['種類'] == 'デイトレ']
         return df['銘柄コード'].astype(str).tolist()
 
+    def _register_symbols(self, symbols):
+        self._client.unregister_all()
+        self._client.register(symbols)
 
 def _apply_regulations(amount, reg):
     for r in reg['RegulationsInfo']:
