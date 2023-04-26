@@ -74,7 +74,7 @@ class BotStock:
         margin_trade_type = 'day' # currently
         front_order_type = 'opening_market' if is_opening else 'closing_market'
 
-        symbols = list((set(target_pos.keys()) | set(current_pos.keys())) - set(day_margin_symbols))
+        symbols = list((set(target_pos.keys()) | set(current_pos.keys())) & set(day_margin_symbols))
         for symbol_i, symbol in symbols:
             self._health_check_ping()
 
