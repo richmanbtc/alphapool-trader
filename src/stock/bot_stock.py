@@ -180,16 +180,17 @@ class BotStock:
         self._client.unregister_all()
         self._client.register(symbols)
 
+
 def _apply_regulations(amount, reg):
     for r in reg['RegulationsInfo']:
-        if int(r['Exchange']) != 1:
+        if int(r['Exchange']) not in [0, 1]:
             continue
-        if int(r['Product']) != 2:
+        if int(r['Product']) not in [0, 2]:
             continue
 
-        if int(r['Side']) == 1:
+        if int(r['Side']) in [0, 1]:
             amount = max(0, amount)
-        elif int(r['Side']) == 2:
+        if int(r['Side']) in [0, 2]:
             amount = min(0, amount)
 
     return amount
