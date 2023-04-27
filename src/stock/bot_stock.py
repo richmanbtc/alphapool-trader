@@ -156,7 +156,8 @@ class BotStock:
             symbol = pos['Symbol']
             side_int = 2 * int(pos['Side']) - 3
             merged[symbol]['pos'] += side_int * pos['LeavesQty']
-            merged[symbol]['pnl'] += pos['ProfitLoss']
+            if pos['ProfitLoss'] is not None:
+                merged[symbol]['pnl'] += pos['ProfitLoss']
         return merged
 
     def _fetch_cash(self):
