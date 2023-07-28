@@ -74,6 +74,8 @@ class BotStock:
         margin_trade_type = 'day' # currently
         front_order_type = 'opening_market' if is_opening else 'closing_market'
 
+        self._logger.debug('day margin not available symbols {}'.format((set(target_pos.keys()) | set(current_pos.keys())) - set(day_margin_symbols)))
+
         symbols = list((set(target_pos.keys()) | set(current_pos.keys())) & set(day_margin_symbols))
         for symbol_i, symbol in enumerate(symbols):
             self._health_check_ping()
@@ -90,12 +92,8 @@ class BotStock:
             amount_unit = 100
             amount = round(amount / amount_unit) * amount_unit
 
-            reg = self._client.fetch_regulations(symbol)
-            amount = _apply_regulations(amount, reg)
-
-            if symbol not in day_margin_symbols:
-                self._logger.debug('{} day margin not available'.format(symbol))
-                amount = 0
+            # reg = self._client.fetch_regulations(symbol)
+            # amount = _apply_regulations(amount, reg)
 
             self._logger.debug('symbol {} ideal_amount {} amount {} price {}'.format(
                 symbol, ideal_amount, amount, price))
