@@ -1,9 +1,17 @@
 from collections import defaultdict
+from enum import Enum
 import time
 import traceback
 import numpy as np
 import pandas as pd
 from retry import retry
+
+
+class Timing(Enum):
+    OPENING = 0
+    MORNING_CLOSING = (2 * 60 + 30) * 60
+    AFTERNOON_OPENING = (3 * 60 + 30) * 60
+    CLOSING = 6 * 60 * 60
 
 
 class BotStock:
@@ -18,11 +26,11 @@ class BotStock:
 
     def run(self):
         while True:
-            is_opening = self._sleep_until_next_loop()
+            timing = self._sleep_until_next_loop()
 
             @retry(tries=3, delay=3, logger=self._logger)
             def retry_step():
-                self._step(is_opening)
+                self._step(timing)
 
             try:
                 retry_step()
@@ -33,26 +41,36 @@ class BotStock:
 
     def _sleep_until_next_loop(self):
         day = 24 * 60 * 60
+        buffer = 30 * 60
         now = time.time()
-        if now % day < (5 * 60 + 30) * 60:
-            next_loop = (now // day) * day + (5 * 60 + 30) * 60
-            is_opening = False
-        elif now % day < (23 * 60 + 30) * 60:
-            next_loop = (now // day) * day + (23 * 60 + 30) * 60
-            is_opening = True
-        else:
-            next_loop = (now // day) * day + day + (5 * 60 + 30) * 60
-            is_opening = False
-        self._logger.info('sleep until {}'.format(pd.to_datetime(next_loop, unit='s', utc=True)))
+
+        configs = (
+            (Timing.MORNING_CLOSING.value - buffer, Timing.MORNING_CLOSING),
+            (Timing.AFTERNOON_OPENING.value - buffer, Timing.AFTERNOON_OPENING),
+            (Timing.CLOSING.value - buffer, Timing.CLOSING),
+            (Timing.OPENING.value - buffer + day, Timing.OPENING),
+            (Timing.MORNING_CLOSING.value - buffer + day, Timing.MORNING_CLOSING),
+        )
+
+        for x, y in configs:
+            if now % day < x:
+                next_loop = (now // day) * day + x
+                timing = y
+                break
+
+        self._logger.info('sleep until {} {}'.format(
+            pd.to_datetime(next_loop, unit='s', utc=True),
+            timing
+        ))
         while time.time() < next_loop:
             self._health_check_ping()
             time.sleep(60)
-        return is_opening
+        return timing
 
-    def _step(self, is_opening):
-        self._logger.info('step is_opening {}'.format(is_opening))
+    def _step(self, timing):
+        self._logger.info('step timing {}'.format(timing))
 
-        target_pos = self._calc_target_positions(is_opening)
+        target_pos = self._calc_target_positions(timing)
         self._logger.debug('target_pos {}'.format(target_pos))
 
         current_pos = self._fetch_current_positions()
@@ -72,7 +90,12 @@ class BotStock:
 
         # create order
         margin_trade_type = 'day' # currently
-        front_order_type = 'opening_market' if is_opening else 'closing_market'
+        front_order_type = {
+            Timing.OPENING: 'opening_market',
+            Timing.MORNING_CLOSING: 'morning_closing_market',
+            Timing.AFTERNOON_OPENING: 'afternoon_opening_market',
+            Timing.CLOSING: 'closing_market',
+        }[timing]
 
         self._logger.debug('day margin not available symbols {}'.format((set(target_pos.keys()) | set(current_pos.keys())) - set(day_margin_symbols)))
 
@@ -128,22 +151,25 @@ class BotStock:
                 front_order_type=front_order_type,
             )
 
-    def _calc_target_positions(self, is_opening):
+    def _calc_target_positions(self, timing):
         now = time.time()
         day = 24 * 60 * 60
 
-        exec_time = (now // day) * day + (day if is_opening else 6 * 60 * 60)
+        exec_time = (now // day) * day + timing.value + (day if timing == Timing.OPENING else 0)
 
         df = self._alphapool_client.get_positions(
-            min_timestamp=exec_time,
+            min_timestamp=(now // day) * day,
         )
-        df = df.loc[df.index.get_level_values('timestamp') == pd.to_datetime(exec_time, unit='s', utc=True)]
+        df = df.loc[df.index.get_level_values('timestamp') <= pd.to_datetime(exec_time, unit='s', utc=True)]
 
         merged = defaultdict(float)
-        positions = df.groupby('model_id')['positions'].nth(-1)
-        for pos in positions:
-            for symbol in pos:
-                merged[symbol.replace('.T', '')] += pos[symbol] / positions.shape[0]
+        model_count = np.unique(df.reset_index()['model_id']).size
+        for _, df_model in df.groupby('model_id'):
+            model_pos = {}
+            for pos in df_model['positions']:
+                model_pos = { **model_pos, **pos }
+            for symbol in model_pos:
+                merged[symbol.replace('.T', '')] += model_pos[symbol] / model_count
 
         return merged
 

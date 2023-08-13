@@ -53,6 +53,8 @@ class StockClient:
             'ClosePositionOrder': 0,
             'FrontOrderType': {
                 'opening_market': 13,
+                'morning_closing_market': 15,
+                'afternoon_opening_market': 14,
                 'closing_market': 16,
             }[front_order_type],
             'Price': 0,
