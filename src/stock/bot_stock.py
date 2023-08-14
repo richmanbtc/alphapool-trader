@@ -158,18 +158,15 @@ class BotStock:
         exec_time = (now // day) * day + timing.value + (day if timing == Timing.OPENING else 0)
 
         df = self._alphapool_client.get_positions(
-            min_timestamp=(now // day) * day,
+            min_timestamp=(exec_time // day) * day,
         )
         df = df.loc[df.index.get_level_values('timestamp') <= pd.to_datetime(exec_time, unit='s', utc=True)]
 
         merged = defaultdict(float)
-        model_count = np.unique(df.reset_index()['model_id']).size
-        for _, df_model in df.groupby('model_id'):
-            model_pos = {}
-            for pos in df_model['positions']:
-                model_pos = { **model_pos, **pos }
-            for symbol in model_pos:
-                merged[symbol.replace('.T', '')] += model_pos[symbol] / model_count
+        positions = df.groupby('model_id')['positions'].nth(-1)
+        for pos in positions:
+            for symbol in pos:
+                merged[symbol.replace('.T', '')] += pos[symbol] / positions.shape[0]
 
         return merged
 
