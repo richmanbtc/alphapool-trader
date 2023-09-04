@@ -1,10 +1,12 @@
 from collections import defaultdict
 from enum import Enum
+from io import StringIO
 import time
 import traceback
 import numpy as np
 import pandas as pd
 from retry import retry
+import requests
 
 
 class Timing(Enum):
@@ -83,7 +85,7 @@ class BotStock:
         self._logger.debug('cash {}'.format(cash))
         self._logger.debug('collateral {}'.format(collateral))
 
-        day_margin_symbols = self._fetch_day_margin_symbols()
+        day_margin_symbols = _fetch_day_margin_symbols()
         self._logger.debug('day_margin_symbols {}'.format(day_margin_symbols))
 
         self._cancel_all_orders()
@@ -192,12 +194,6 @@ class BotStock:
                 self._logger.info('cancel_order {}'.format(order))
                 self._client.cancel_order(order['ID'])
 
-    def _fetch_day_margin_symbols(self):
-        url = 'https://kabu.com/pdf/Gmkpdf/shinyou/meigara_list.csv'
-        df = pd.read_csv(url, encoding='shift_jis', skiprows=1)
-        df = df.loc[df['種類'] == 'デイトレ']
-        return df['銘柄コード'].astype(str).tolist()
-
     def _register_symbols(self, symbols):
         self._client.unregister_all()
         self._client.register(symbols)
@@ -216,3 +212,13 @@ def _apply_regulations(amount, reg):
             amount = min(0, amount)
 
     return amount
+
+
+def _fetch_day_margin_symbols():
+    ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36'
+    url = 'https://kabu.com/pdf/Gmkpdf/shinyou/meigara_list.csv'
+    req = requests.get(url, headers={ "User-Agent": ua })
+    req.encoding = 'shift_jis'
+    df = pd.read_csv(StringIO(req.text), skiprows=1)
+    df = df.loc[df['種類'] == 'デイトレ']
+    return df['銘柄コード'].astype(str).tolist()
