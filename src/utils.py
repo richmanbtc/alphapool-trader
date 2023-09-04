@@ -110,7 +110,7 @@ def fetch_collateral(client):
         res = client.privateGetAccount()
         return float(res['result']['collateral'])
     elif client.id == 'binance':
-        res = client.fapiPrivateGetAccount()
+        res = client.fapiPrivateV2GetAccount()
         return float(res['totalMarginBalance'])
     elif client.id == 'bybit':
         res = client.privateGetV2PrivateWalletBalance({ 'coin': 'USDT' })
