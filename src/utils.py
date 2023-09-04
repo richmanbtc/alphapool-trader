@@ -28,7 +28,7 @@ def symbol_to_ccxt_symbol(symbol, exchange):
     if exchange == 'ftx':
         return symbol + '/USD:USD'
     elif exchange == 'binance':
-        return symbol + '/USDT'
+        return symbol + '/USDT:USDT'
     elif exchange == 'bybit':
         return symbol + '/USDT:USDT'
     elif exchange == 'okx':
