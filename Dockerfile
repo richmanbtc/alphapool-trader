@@ -2,7 +2,7 @@ FROM python:3.10.6
 
 RUN pip install --no-cache-dir --upgrade pip
 RUN pip install --no-cache-dir \
-    ccxt==1.93.1 \
+    ccxt==4.2.1 \
     coverage==6.2 \
     numpy==1.23.3 \
     pandas==1.5.2 \

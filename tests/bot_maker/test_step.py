@@ -38,7 +38,7 @@ class TestBotMakerStep(TestCase):
         logger = create_logger('debug')
 
         client = create_ccxt_client(exchange='binance')
-        client.fapiPrivateGetAccount = MagicMock(return_value=get_account_response_binance)
+        client.fapiPrivateV2GetAccount = MagicMock(return_value=get_account_response_binance)
         client.fetch_positions = MagicMock(return_value=fetch_positions_response_binance)
         client.fetch_ticker = MagicMock(return_value=fetch_ticker_response_binance)
         client.fetch_order_book = MagicMock(return_value=fetch_order_book_response_binance)

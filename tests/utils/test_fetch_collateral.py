@@ -31,7 +31,7 @@ class TestUtilsFetchCollateral(TestCase):
     def test_ok_binance(self):
         client = MagicMock()
         client.id = 'binance'
-        client.fapiPrivateGetAccount.return_value = response_binance
+        client.fapiPrivateV2GetAccount.return_value = response_binance
 
         collateral = fetch_collateral(client)
         self.assertEqual(collateral, 1)
