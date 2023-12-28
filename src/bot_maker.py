@@ -61,12 +61,6 @@ class BotMaker:
             time.sleep(self._loop_interval)
 
     def _initialize(self):
-        if self._client.id == 'bybit':
-            self._logger.info('switch position mode')
-            self._client.privatePostPrivateLinearPositionSwitchMode({
-                'coin': 'USDT',
-                'mode': 'MergedSingle'
-            })
         self._logger.info('initialized')
 
     def _step(self):
@@ -360,7 +354,7 @@ class BotMaker:
         elif self._client.id == 'bybit':
             params['timeInForce'] = 'PostOnly'
             params['reduceOnly'] = reduce_only
-            params['position_idx'] = 0
+            params['positionIdx'] = 0
 
         self._ensure_leverage(market, 10)
 

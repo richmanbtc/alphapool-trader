@@ -1,5 +1,11 @@
 TODO
 
+## bybit position mode
+
+Prior to v0.0.32, the position mode was set for each symbol using the API at startup, but after that, it was controlled by the bybit system default. Make sure the system default is one-way
+
+https://bybit-exchange.github.io/docs/v5/position/position-mode
+
 ## pandas memory leak
 
 see src/mem_test.py
