@@ -21,8 +21,10 @@ def create_ccxt_client(exchange, api_key=None, api_secret=None,
         'options': options,
     })
 
-    return client
+    if exchange == 'binance':
+        _override_binance_create_order_request(client)
 
+    return client
 
 def symbol_to_ccxt_symbol(symbol, exchange):
     if exchange == 'ftx':
@@ -151,3 +153,19 @@ def set_leverage(client, market, leverage):
         if 'leverage not modified' in e.args[0]:
             return
         raise
+
+
+def _override_binance_create_order_request(client):
+    old_method = client.create_order_request
+
+    def new_method(symbol, type, side, amount, price=None, params={}):
+        use_bbo = 'priceMatch' in params and params['priceMatch'] is not None
+        if not use_bbo:
+            return old_method(symbol, type, side, amount, price=price, params=params)
+
+        assert price is None
+        res = old_method(symbol, type, side, amount, price=1, params=params)
+        del res['price']
+        return res
+
+    client.create_order_request = new_method

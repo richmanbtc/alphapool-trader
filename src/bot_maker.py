@@ -324,18 +324,17 @@ class BotMaker:
 
         use_bbo = price is None and self._client.id == 'binance'
 
-        if not use_bbo:
-            ob = self._client.fetch_order_book(symbol=symbol)
-            best_ask = ob['asks'][0][0]
-            best_bid = ob['bids'][0][0]
+        ob = self._client.fetch_order_book(symbol=symbol)
+        best_ask = ob['asks'][0][0]
+        best_bid = ob['bids'][0][0]
 
-            if price is None:
-                price = best_ask if signed_amount < 0 else best_bid
+        if price is None:
+            price = best_ask if signed_amount < 0 else best_bid
+        else:
+            if signed_amount < 0:
+                price = max(best_ask, price)
             else:
-                if signed_amount < 0:
-                    price = max(best_ask, price)
-                else:
-                    price = min(best_bid, price)
+                price = min(best_bid, price)
 
         signed_amount = normalize_amount(
             signed_amount,
@@ -373,7 +372,7 @@ class BotMaker:
             order_type,
             'sell' if signed_amount < 0 else 'buy',
             amount,
-            price,
+            None if use_bbo else price,
             params
         )
         self._logger.info('order created {}'.format(res))
