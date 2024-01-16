@@ -1,5 +1,12 @@
 TODO
 
+## binance post only error
+
+- Many post only errors occur only with binance. It doesn't happen much with okx or bybit.
+- The price unit of linkusdt is the same on these exchanges.
+- Post only is enabled in bybit and okx
+- I don't know the cause, but try using bbo only on binance.
+
 ## bybit position mode
 
 Prior to v0.0.32, the position mode was set for each symbol using the API at startup, but after that, it was controlled by the bybit system default. Make sure the system default is one-way

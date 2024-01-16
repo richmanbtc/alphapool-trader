@@ -322,18 +322,20 @@ class BotMaker:
         params = {}
         order_type = 'limit'
 
-        # fetch latest ticker
-        ob = self._client.fetch_order_book(symbol=symbol)
-        best_ask = ob['asks'][0][0]
-        best_bid = ob['bids'][0][0]
+        use_bbo = price is None and self._client.id == 'binance'
 
-        if price is None:
-            price = best_ask if signed_amount < 0 else best_bid
-        else:
-            if signed_amount < 0:
-                price = max(best_ask, price)
+        if not use_bbo:
+            ob = self._client.fetch_order_book(symbol=symbol)
+            best_ask = ob['asks'][0][0]
+            best_bid = ob['bids'][0][0]
+
+            if price is None:
+                price = best_ask if signed_amount < 0 else best_bid
             else:
-                price = min(best_bid, price)
+                if signed_amount < 0:
+                    price = max(best_ask, price)
+                else:
+                    price = min(best_bid, price)
 
         signed_amount = normalize_amount(
             signed_amount,
@@ -348,6 +350,8 @@ class BotMaker:
         if self._client.id == 'binance':
             params['timeInForce'] = 'GTX'
             params['reduceOnly'] = 'true' if reduce_only else 'false'
+            if use_bbo:
+                params['priceMatch'] = 'QUEUE'
         elif self._client.id == 'okx':
             order_type = 'post_only'
             params['reduceOnly'] = 'true' if reduce_only else 'false'
