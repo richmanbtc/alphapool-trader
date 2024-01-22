@@ -1,5 +1,12 @@
 TODO
 
+## smoother
+
+- Small fluctuations in the target position occur due to changes in price and collateral.
+- This leads to unnecessary transactions and increases transaction costs.
+- To prevent this, we define a unit_pos = collateral / price for use in calculating the target position and smooth out the unit_pos.
+- However, this functionality is only effective for taker positions, and the limit order function remains as per the traditional method.
+
 ## binance post only error
 
 - Many post only errors occur only with binance. It doesn't happen much with okx or bybit.

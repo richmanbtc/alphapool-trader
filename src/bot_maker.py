@@ -22,7 +22,8 @@ from .utils import (
 
 class BotMaker:
     def __init__(self, client=None, logger=None, leverage=None,
-                 alphapool_client=None, model_id=None, health_check_ping=None):
+                 alphapool_client=None, model_id=None, health_check_ping=None,
+                 unit_pos_smoother=None):
         self._client = client
         self._logger = logger
         self._order_interval = 1
@@ -32,6 +33,7 @@ class BotMaker:
         self._model_id = model_id
         self._leverage_set = set()
         self._health_check_ping = health_check_ping
+        self._unit_pos_smoother = unit_pos_smoother
 
         # strategy
         self._positions = {}
@@ -220,11 +222,11 @@ class BotMaker:
                 for order in row.orders[symbol]:
                     weight = self._weights.get(model_id, 0.0)
                     key = (timestamp.timestamp(), symbol, order['price'], order['is_buy'], order['duration'])
+                    unit_pos = collateral / order['price']
                     limit_order_amounts[key] += amount_to_exchange_amount(
                         amount=order['amount'] * weight,
                         leverage=self._leverage,
-                        collateral=collateral,
-                        price=order['price'],
+                        unit_pos=unit_pos,
                         market=markets[self._symbol_to_ccxt_symbol(symbol)]
                     )
 
@@ -410,11 +412,14 @@ class BotMaker:
             if target_positions[symbol] == 0:
                 continue
             ticker = self._client.fetch_ticker(self._symbol_to_ccxt_symbol(symbol))
+
+            unit_pos = collateral / ticker['last']
+            unit_pos = self._unit_pos_smoother.step(symbol, unit_pos)
+
             target_positions[symbol] = amount_to_exchange_amount(
                 amount=target_positions[symbol],
                 leverage=self._leverage,
-                collateral=collateral,
-                price=ticker['last'],
+                unit_pos=unit_pos,
                 market=markets[self._symbol_to_ccxt_symbol(symbol)]
             )
 
@@ -462,8 +467,8 @@ def order_is_old(now, timestamp):
     return timestamp < pd.to_datetime(now - 300, unit='s', utc=True)
 
 
-def amount_to_exchange_amount(amount, leverage, collateral, price, market):
-    return amount * leverage * collateral / price / market['contractSize']
+def amount_to_exchange_amount(amount, leverage, unit_pos, market):
+    return amount * leverage * unit_pos / market['contractSize']
 
 
 def fix_market(market, exchange):

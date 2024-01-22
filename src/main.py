@@ -11,6 +11,7 @@ from .alphapool_mock import MockClient
 from .panic_manager import PanicManager
 from .stock.stock_client import StockClient
 from .stock.bot_stock import BotStock
+from .smoother import Smoother, NullSmoother
 
 
 def start():
@@ -23,6 +24,8 @@ def start():
     leverage = float(os.getenv('ALPHAPOOL_LEVERAGE'))
     log_level = os.getenv('ALPHAPOOL_LOG_LEVEL')
     model_id = os.getenv('ALPHAPOOL_MODEL_ID')
+    unit_pos_halflife = float(os.getenv('ALPHAPOOL_UNIT_POS_HALFLIFE', '0'))
+    unit_pos_reset_threshold = float(os.getenv('ALPHAPOOL_UNIT_POS_RESET_THRESHOLD', '0.1'))
 
     logger = create_logger(log_level)
 
@@ -64,6 +67,18 @@ def start():
             subaccount=subaccount,
         )
 
+        if unit_pos_halflife > 0:
+            logger.info(f'unit_pos_smoother enabled halflife {unit_pos_halflife} reset_threshold {unit_pos_reset_threshold}')
+            unit_pos_smoother = Smoother(
+                logger=logger,
+                halflife=unit_pos_halflife,
+                reset_threshold=unit_pos_reset_threshold,
+                save_path='./unit_pos_smoother_states.json'
+            )
+        else:
+            logger.info('unit_pos_smoother disabled')
+            unit_pos_smoother = NullSmoother()
+
         bot = BotMaker(
             client=client,
             logger=logger,
@@ -71,6 +86,7 @@ def start():
             alphapool_client=alphapool_client,
             model_id=model_id,
             health_check_ping=health_check_ping,
+            unit_pos_smoother=unit_pos_smoother,
         )
 
     bot.run()
