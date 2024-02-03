@@ -19,6 +19,8 @@ from .utils import (
 # internal: relative to collateral
 # exchange: same as exchange. internal * collateral / price / contract_size
 
+MAX_LEVERAGE = 10
+
 
 class BotMaker:
     def __init__(self, client=None, logger=None, leverage=None,
@@ -363,10 +365,11 @@ class BotMaker:
         elif self._client.id == 'kucoinfutures':
             params['postOnly'] = True
             params['reduceOnly'] = reduce_only
+            params['leverage'] = MAX_LEVERAGE
         else:
             raise Exception(f'set postonly and reduceonly, not implemented {self._client.id}')
 
-        self._ensure_leverage(market, 10)
+        self._ensure_leverage(market, MAX_LEVERAGE)
 
         self._logger.info('create_order symbol {} signed_amount {} price {} params {}'.format(
             symbol, signed_amount, price, params
