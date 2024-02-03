@@ -360,6 +360,11 @@ class BotMaker:
             params['timeInForce'] = 'PostOnly'
             params['reduceOnly'] = reduce_only
             params['positionIdx'] = 0
+        elif self._client.id == 'kucoinfutures':
+            params['postOnly'] = True
+            params['reduceOnly'] = reduce_only
+        else:
+            raise Exception(f'set postonly and reduceonly, not implemented {self._client.id}')
 
         self._ensure_leverage(market, 10)
 

@@ -35,6 +35,8 @@ def symbol_to_ccxt_symbol(symbol, exchange):
         return symbol + '/USDT:USDT'
     elif exchange == 'okx':
         return symbol + '/USDT:USDT'
+    elif exchange == 'kucoinfutures':
+        return symbol + '/USDT:USDT'
     elif exchange == 'bitflyer':
         return symbol + '/JPY:JPY'
     else:
@@ -123,6 +125,11 @@ def fetch_collateral(client):
     elif client.id == 'okx':
         res = client.privateGetAccountBalance()
         return float(res['data'][0]['totalEq'])
+    elif client.id == 'kucoinfutures':
+        res = client.futuresPrivateGetAccountOverview({
+            'currency': 'USDT'
+        })
+        return float(res['data']['accountEquity'])
     elif client.id == 'bitflyer':
         res = client.privateGetGetcollateral()
         return float(res['collateral']) + float(res['open_position_pnl'])
