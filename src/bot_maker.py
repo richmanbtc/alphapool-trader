@@ -386,8 +386,12 @@ class BotMaker:
         return res
 
     def _ensure_leverage(self, market, leverage):
-        if self._client.id == 'bitflyer':
-            self._logger.info('bitflyer _ensure_leverage skip')
+        skipped_exchanges = [
+            'bitflyer',
+            'kucoinfutures',
+        ]
+        if self._client.id in skipped_exchanges:
+            self._logger.info(f'{self._client.id} _ensure_leverage skip')
             return
 
         symbol = market['symbol']
