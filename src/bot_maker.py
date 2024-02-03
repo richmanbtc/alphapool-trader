@@ -391,7 +391,6 @@ class BotMaker:
     def _ensure_leverage(self, market, leverage):
         skipped_exchanges = [
             'bitflyer',
-            'kucoinfutures',
         ]
         if self._client.id in skipped_exchanges:
             self._logger.info(f'{self._client.id} _ensure_leverage skip')
@@ -403,7 +402,7 @@ class BotMaker:
         self._logger.info('set_leverage symbol {} leverage {}'.format(
             symbol, leverage
         ))
-        set_leverage(self._client, market, leverage)
+        set_leverage(self._client, market, leverage, logger=self._logger)
         self._leverage_set.add(symbol)
 
     def _remove_old_data(self):

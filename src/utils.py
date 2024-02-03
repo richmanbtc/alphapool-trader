@@ -1,3 +1,4 @@
+from operator import itemgetter
 import ccxt
 import pandas as pd
 import numpy as np
@@ -149,11 +150,24 @@ def cancel_all_orders(client, symbol):
     client.cancel_orders(order_ids, symbol=symbol)
 
 
-def set_leverage(client, market, leverage):
+def set_leverage(client, market, leverage, logger=None):
     symbol = market['symbol']
     max_leverage = market['limits']['leverage']['max']
     if max_leverage is not None:
         leverage = min(leverage, max_leverage)
+
+    if client.id == 'kucoinfutures':
+        tiers = client.fetch_market_leverage_tiers(symbol)
+        tiers = [x for x in tiers if x['maxLeverage'] >= leverage]
+        tier = min(tiers, key=itemgetter('maxLeverage'))
+        if logger is not None:
+            logger.debug(f'futuresPrivatePostPositionRiskLimitLevelChange symbol {symbol} tier {tier}')
+        client.futuresPrivatePostPositionRiskLimitLevelChange({
+            'symbol': market['id'],
+            'level': tier['tier'],
+        })
+        return
+
     try:
         client.set_leverage(leverage, symbol)
     except BadRequest as e:
