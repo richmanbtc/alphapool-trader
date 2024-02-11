@@ -37,6 +37,9 @@ class BotMaker:
         self._health_check_ping = health_check_ping
         self._unit_pos_smoother = unit_pos_smoother
 
+        # cache
+        self._df_positions = None
+
         # strategy
         self._positions = {}
         self._weights = {}
@@ -159,12 +162,29 @@ class BotMaker:
         for ccxt_symbol in df_current_pos.index:
             self._exchange_positions[ccxt_symbol_to_symbol(ccxt_symbol)] = df_current_pos.loc[ccxt_symbol, 'position']
 
+    def _get_positions(self, now):
+        inactive_time = 24 * 60 * 60
+        if self._df_positions is None:
+            df = self._alphapool_client.get_positions(
+                min_timestamp=int(now - inactive_time),
+            )
+        else:
+            df = self._alphapool_client.get_positions(
+                min_timestamp=int(now - 60 * 60),
+            )
+            df = pd.concat([self._df_positions, df])
+            t = df.index.get_level_values('timestamp')
+            df = df.loc[t >= pd.to_datetime(now - inactive_time, unit='s', utc=True)]
+            df = df.loc[~df.index.duplicated(keep='last')]
+            df = df.sort_index()
+
+        self._df_positions = df.copy()
+        return df
+
     def _fetch_models(self, collateral, markets):
         now = time.time()
 
-        df = self._alphapool_client.get_positions(
-            min_timestamp=int(now - 24 * 60 * 60),
-        )
+        df = self._get_positions(now)
 
         if df.shape[0] == 0:
             self._logger.info('close all because df.shape[0] == 0')
