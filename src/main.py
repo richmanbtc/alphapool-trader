@@ -20,6 +20,7 @@ def start():
     api_secret = os.getenv('CCXT_API_SECRET')
     api_password = os.getenv('CCXT_API_PASSWORD')
     subaccount = os.getenv('CCXT_SUBACCOUNT')
+    account_type = os.getenv('CCXT_ACCOUNT_TYPE')
     api_base_url = os.getenv('CCXT_API_BASE_URL') # for stock
     leverage = float(os.getenv('ALPHAPOOL_LEVERAGE'))
     log_level = os.getenv('ALPHAPOOL_LOG_LEVEL')
@@ -87,6 +88,7 @@ def start():
             model_id=model_id,
             health_check_ping=health_check_ping,
             unit_pos_smoother=unit_pos_smoother,
+            ccxt_account_type=account_type,
         )
 
     bot.run()

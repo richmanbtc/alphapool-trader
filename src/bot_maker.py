@@ -25,8 +25,9 @@ MAX_LEVERAGE = 10
 class BotMaker:
     def __init__(self, client=None, logger=None, leverage=None,
                  alphapool_client=None, model_id=None, health_check_ping=None,
-                 unit_pos_smoother=None):
+                 unit_pos_smoother=None, ccxt_account_type=None):
         self._client = client
+        self._ccxt_account_type = ccxt_account_type
         self._logger = logger
         self._order_interval = 1
         self._loop_interval = 60
@@ -79,7 +80,7 @@ class BotMaker:
 
         self._sync_limit_orders_and_exchange_positions()
 
-        collateral = fetch_collateral(self._client)
+        collateral = fetch_collateral(self._client, self._ccxt_account_type)
         self._logger.info('collateral {}'.format(collateral))
         markets = {market['symbol']: fix_market(market, self._client.id)
                    for market in self._client.fetch_markets()}

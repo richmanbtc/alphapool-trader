@@ -110,7 +110,7 @@ def fetch_tickers(client):
     return df
 
 
-def fetch_collateral(client):
+def fetch_collateral(client, account_type=None):
     if client.id == 'ftx':
         res = client.privateGetAccount()
         return float(res['result']['collateral'])
@@ -119,7 +119,7 @@ def fetch_collateral(client):
         return float(res['totalMarginBalance'])
     elif client.id == 'bybit':
         res = client.privateGetV5AccountWalletBalance({
-            'accountType': 'CONTRACT',
+            'accountType': 'UNIFIED' if account_type == 'unified' else 'CONTRACT',
             'coin': 'USDT',
         })
         return float(res['result']['list'][0]['coin'][0]['equity'])
